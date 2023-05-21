@@ -21,9 +21,9 @@ const {
 } = require('../../domain/use-cases/form');
 
 const {
-	getSubmissionsList,
-	getSubmission,
-	deleteSubmission,
+	getSubmissionsList: getSubmissionsListUseCase,
+	getSubmission: getSubmissionUseCase,
+	deleteSubmission: deleteSubmissionUseCase,
 } = require('../../domain/use-cases/submission');
 
 const makeUserController = require('./userController');
@@ -83,9 +83,15 @@ const submissionController = makeSubmissionController({
 	safeAsyncCall,
 	translateInterfaceErrorCodeToHttpStatusCode,
 	authorizeControllerHelper,
+
+	getSubmissionUseCase,
+	getSubmissionsListUseCase,
+	// updateSubmissionPointsUseCase,
+	deleteSubmissionUseCase,
 })
 
 module.exports = {
 	userController,
-	formController
+	formController,
+	submissionController
 }

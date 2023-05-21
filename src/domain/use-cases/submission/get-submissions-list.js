@@ -1,24 +1,30 @@
 module.exports = function makeGetSubmissionsList({
 		submissionRepository,
-		formRepository,
 
 		safeAsyncCall,
+		uniqArrayItems,
 
 		makeForm,
+		makeFormSubmission,
 
 		makeInternalError,
-		makeFormNotFoundError,
 		makeForbiddenError,
+
+		getFormsUseCases
 	}={}) {
 		return function getSubmissionsList({ formId, userId }) {
 			return new Promise(async (resolve, reject) => {
+				const {
+					getFormUseCase,
+					getFormsListUseCase,
+				} = getFormsUseCases()
+
 				if (formId) {
-					const [formData, formError] = safeAsyncCall(formRepository.findById({ id: formId }))
+
+					const [formData, formError] = safeAsyncCall(getFormUseCase({ formId, userId }))
 
 					if (formError) {
-						return reject(makeInternalError(`Error while fetching forms.`))
-					} else if (!formData) {
-						return reject(makeFormNotFoundError(`Form does not exist.`))
+						return reject(formError)
 					}
 
 					const form = makeForm(formData)
@@ -37,14 +43,33 @@ module.exports = function makeGetSubmissionsList({
 						submissions
 					}))
 				} else {
-					const [submissions, submissionsError] = safeAsyncCall(submissionRepository.findBySubmitterId({ submitterId: userId }))
+					const [submissions, submissionsError] = await safeAsyncCall(submissionRepository.findBySubmitterId({ submitterId: userId }))
 
 					if (submissionsError) {
 						return reject(makeInternalError(`Error while fetching submissions.`))
 					}
 
+					const formIds = uniqArrayItems(submissions.map(submission => makeFormSubmission(submission).getFormId()))
+					const [formsData, formsError] = await safeAsyncCall(getFormsListUseCase({ formIds }))
+
+					if (formsError) {
+						return reject(formsError)
+					}
+
+					const { forms: formsMetaData } = formsData
+					const formsMetaDataById = Object.fromEntries(formsMetaData.map(form => [form._id, form]))
+					const extendedSubmissions = submissions.map(submission => {
+						const formId = makeFormSubmission(submission).getFormId()
+						const formMetaData = formsMetaDataById[formId]
+
+						return {
+							...submission,
+							formMetaData,
+						}
+					})
+
 					return resolve(Object.freeze({
-						submissions
+						submissions: extendedSubmissions
 					}))
 				}
 			})

@@ -19,9 +19,9 @@ module.exports = function makeUserRouter({
 	*/
 
 	routerInstance.get('/', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, submissionController.getSubmissionsList))
-	routerInstance.get('/submissions/:submissionId', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.getSubmission))
-	routerInstance.put('/submissions/:submissionId/update-points', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.updateSubmissionPoints))
-	routerInstance.delete('/submissions/:submissionId', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.deleteSubmission))
+	routerInstance.get('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, submissionController.getSubmission))
+	routerInstance.put('/:id/update-points', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, submissionController.updateSubmissionPoints))
+	routerInstance.delete('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, submissionController.deleteSubmission))
 
 	return routerInstance
 }

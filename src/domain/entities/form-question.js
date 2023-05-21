@@ -193,6 +193,25 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 			setAnswer: (newAnswer) => currentQuestionAnswer = newAnswer,
 			validateAnswer: () => validator(currentQuestionAnswer, answerSettings),
 			hasAnswer: () => hasAnswerChecker(currentQuestionAnswer),
+
+			// Secure object don't have any info about right answers
+			toSecureObject: () => ({
+				id,
+				title: sanitizedTitle,
+				type,
+				content,
+				isRequired,
+				timeLimit,
+			}),
+			toObject: () => ({
+				id,
+				title: sanitizedTitle,
+				type,
+				content,
+				isRequired,
+				timeLimit,
+				answerSettings,
+			})
 		})
 	}
 }

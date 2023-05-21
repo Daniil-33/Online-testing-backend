@@ -38,7 +38,7 @@ function checkIsAllRequiredQuestionsAnswered(form, answers) {
 
 module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 	return function makeSubmission({
-		id = Id.makeId(),
+		_id = Id.makeId(),
 		submitterId,
 		answers,
 		createdOn = Date.now(),
@@ -48,7 +48,7 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 		isChecked=false,
 		points={},
 	} = {}) {
-		if (!Id.isValidId(id)) {
+		if (!Id.isValidId(_id)) {
 			throw new Error('Submission must have a valid id.')
 		}
 
@@ -86,10 +86,11 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 		}
 
 		return Object.freeze({
-			getId: () => id,
+			getId: () => _id,
 			getSubmitterId: () => submitterId,
 			getFormId: () => formId || form.getId(),
 			getAnswers: () => answers,
+			getAnswer: questionId => answers[questionId],
 			getCreatedOn: () => createdOn,
 			getPoints: () => initialPoints,
 			getEmptyAnswers: () => emptyAnswers,
@@ -100,7 +101,7 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 			setPointsByAnswers,
 
 			toObject: () => ({
-				id,
+				_id,
 				submitterId,
 				formId,
 				answers,

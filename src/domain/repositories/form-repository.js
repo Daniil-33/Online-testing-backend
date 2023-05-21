@@ -1,6 +1,7 @@
 module.exports = function makeSubmissionRepository ({ formRepositoryImplementation }) {
 	return Object.freeze({
 		findById,
+		findByIds,
 		findByAuthorId,
 		insert,
 		updateById,
@@ -10,6 +11,13 @@ module.exports = function makeSubmissionRepository ({ formRepositoryImplementati
 	async function findById({ id }) {
 		const db = await formRepositoryImplementation()
 		const result = await db.findOne({ _id: id })
+
+		return result
+	}
+
+	async function findByIds({ formIds, attrs={} }) {
+		const db = await formRepositoryImplementation()
+		const result = await db.find({ _id: { $in: formIds } }).project(attrs).toArray()
 
 		return result
 	}

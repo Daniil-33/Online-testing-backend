@@ -35,7 +35,7 @@ module.exports = function makePostForm ({
 
 			const form = makeForm(formInfo)
 
-			const [submission, submissionError] = await safeAsyncCall(() => addSubmissionUseCase({
+			const [submission, submissionError] = await safeAsyncCall(addSubmissionUseCase({
 				form,
 				userId,
 				answers,

@@ -57,7 +57,7 @@ module.exports = function buildMakeForm ({
 			}
 
 			if (!authorId) {
-				throw new Error('Form must have an owner id.')
+				throw new Error('Form must have an author id.')
 			}
 
 			if (!title) {
@@ -114,6 +114,13 @@ module.exports = function buildMakeForm ({
 					updatedOn,
 					submissions: formSubmissions,
 					settings
+				}),
+				toMetaDataObject: () => ({
+					_id,
+					authorId,
+					title: sanitizedTitle,
+					description: sanitizedDescription,
+					createdOn,
 				}),
 				toSubmissionFormat: () => ({
 					_id,

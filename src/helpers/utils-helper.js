@@ -22,8 +22,13 @@ function safeSyncCall (fn) {
 	}
 }
 
+function uniqArrayItems (arr) {
+	return [...new Set(arr)]
+}
+
 module.exports = {
 	isEmailValid,
 	safeAsyncCall,
 	safeSyncCall,
+	uniqArrayItems,
 }

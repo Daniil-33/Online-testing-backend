@@ -1,17 +1,14 @@
 module.exports = function makeGetForm ({
-	userRepository,
 	formRepository,
 
-	makeUser,
 	makeForm,
 
 	safeAsyncCall,
-	makeUserNotFoundError,
 	makeForbiddenError,
 	makeFormNotFoundError,
 	makeInternalError,
 }={}) {
-	return function getForm ({ formId, userId }) {
+	return function getForm ({ formId, userId, ignoreAuthorId}) {
 		return new Promise(async (resolve, reject) => {
 			const [formData, formError] = await safeAsyncCall(formRepository.findById({ id: formId }))
 
@@ -23,7 +20,7 @@ module.exports = function makeGetForm ({
 
 			const form = makeForm(formData)
 
-			if (form.getAuthorId() !== userId) {
+			if (form.getAuthorId() !== userId && !ignoreAuthorId) {
 				return reject(makeForbiddenError(`You are not allowed to access this form.`))
 			}
 

@@ -4,6 +4,7 @@ module.exports = function buildMakeAddSubmission ({
 		formRepository,
 
 		makeUser,
+		makeFormSubmission,
 
 		safeAsyncCall,
 		safeSyncCall,
@@ -28,6 +29,7 @@ module.exports = function buildMakeAddSubmission ({
 				const [submission, submissionError] = safeSyncCall(() => makeFormSubmission({
 					submitterId: user.getId(),
 					answers,
+					form,
 				}))
 
 				if (submissionError) {
@@ -43,6 +45,7 @@ module.exports = function buildMakeAddSubmission ({
 				submission.checkUp()
 
 				const [insertionResult, insertionError] = await safeAsyncCall(submissionRepository.insert({
+					_id: submission.getId(),
 					submitterId: submission.getSubmitterId(),
 					formId: submission.getFormId(),
 					answers: submission.getAnswers(),

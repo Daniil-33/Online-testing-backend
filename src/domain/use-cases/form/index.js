@@ -3,18 +3,22 @@ const {
 	userRepository,
 	submissionRepository
 } = require('../../repositories/')
+
 const {
 	makeForm,
 	makeUser,
 	makeFormSubmission
 } = require('../../entities/')
+
 const {
 	getUser: getUserUseCase,
 	updateUser: updateUserUseCase
 } = require('../user/')
+
 const { addSubmission: addSubmissionUseCase } = require('../submission/')
 
 const { safeAsyncCall, safeSyncCall } = require('../../../helpers/utils-helper')
+
 const {
 	makeUserNotFoundError,
 	makeInternalError,
@@ -60,6 +64,7 @@ const getFormsList = makeGetFormsList({
 	formRepository,
 
 	makeUser,
+	makeForm,
 
 	safeAsyncCall,
 	makeUserNotFoundError,
@@ -95,6 +100,8 @@ const getFormForSubmission = makeGetFormForSubmission({
 	makeInternalError,
 	makeFormNotAcceptingSubmissionsError,
 	makeFormAlreadySubmittedError,
+
+	getUserUseCase,
 })
 
 const updateForm = makeUpdateForm({
@@ -113,6 +120,7 @@ const updateForm = makeUpdateForm({
 
 	dataValidator,
 })
+
 const postForm = makePostForm({
 	formRepository,
 	userRepository,
@@ -135,6 +143,7 @@ const postForm = makePostForm({
 
 	dataValidator,
 })
+
 const deleteForm = makeDeleteForm({
 	formRepository,
 

@@ -2,8 +2,8 @@ function adaptExpressRequest (req={}) {
 	return Object.freeze({
 		path: req.path,
 		method: req.method,
-		pathParams: req.params,
-		queryParams: req.query,
+		pathParams: req.params || req.pathParams || {},
+		queryParams: req.query || req.queryParams || {},
 		body: req.body,
 		headers: req.headers,
 	})

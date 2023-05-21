@@ -9,22 +9,6 @@ module.exports = function makeUserController({
 	loginUserWithCredentialsUseCase,
 	loginUserWithTokenUseCase,
 }) {
-	// return function handle(httpRequest) {
-	// 	switch (httpRequest.method) {
-	// 		case 'POST':
-	// 			return registerUser(httpRequest);
-	// 		case 'GET':
-	// 			return loginUser(httpRequest);
-	// 		default:
-	// 			return makeHttpError({
-	// 				errorData: {
-	// 					message:'Method not allowed'
-	// 				},
-	// 				errorCode: 405,
-	// 			});
-	// 	}
-	// }
-
 	return {
 		registerUser,
 		loginUser,
