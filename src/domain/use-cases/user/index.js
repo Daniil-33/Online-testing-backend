@@ -54,6 +54,7 @@ const makeUserRegister = require('./user-register')
 const makeUserLoginWithCredentials = require('./user-login-with-credentials')
 const makeUserLoginWithToken = require('./user-login-with-token')
 const makeGetUser = require('./get-user')
+const makeUpdateUser = require('./update-user')
 
 const userRegister = makeUserRegister({
 	userRepository,
@@ -106,10 +107,22 @@ const getUser = makeGetUser({
 	makeUserNotFoundError,
 	makeInternalError,
 })
+const updateUser = makeUpdateUser({
+	userRepository,
+	makeUser,
+
+	safeAsyncCall,
+	safeSyncCall,
+	dataValidator,
+
+	makeInternalError,
+	makeInvalidCredentialsError,
+})
 
 module.exports = {
 	userRegister,
 	userLoginWithCredentials,
 	userLoginWithToken,
-	getUser
+	getUser,
+	updateUser
 }

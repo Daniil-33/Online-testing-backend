@@ -2,18 +2,14 @@ module.exports = function makeUserRouter({
 	router,
 	userController,
 	adaptExpressRequest,
-	makeExpressResponseHandler,
+	handleRouteRequest,
+	handleRouteRequestProxy,
 }) {
 	const routerInstance = router()
+	const proxiedHandleRouteRequest = handleRouteRequestProxy(handleRouteRequest)
 
-	routerInstance.all('/', (req, res) => {
-		const httpRequest = adaptExpressRequest(req)
-		const httpResponseHandler = makeExpressResponseHandler(res)
-
-		userController(httpRequest)
-			.then(httpResponse => httpResponseHandler(httpResponse))
-			.catch(err => httpResponseHandler(err))
-	})
+	routerInstance.post('/', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, userController.registerUser))
+	routerInstance.get('/', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, userController.loginUser))
 
 	return routerInstance
 }

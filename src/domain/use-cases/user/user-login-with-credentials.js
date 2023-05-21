@@ -44,13 +44,7 @@ module.exports = function makeUserLoginWithCredentials ({
 
 				resolve(Object.freeze({
 					token,
-					user: {
-						id: user.getId(),
-						userName: user.getUserName(),
-						email: user.getEmail(),
-						createdForms: user.getCreatedForms(),
-						submissions: user.getSubmissions(),
-					}
+					user: user.toSecureObject()
 				}))
 			})
 		}

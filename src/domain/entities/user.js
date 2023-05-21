@@ -51,6 +51,24 @@ module.exports = function buildMakeUser ({
 
 			pushSubmission: (submissionId) => userSubmissions.push(submissionId),
 			pushCreatedForm: (formId) => userCreatedForms.push(formId),
+
+			toObject: () => ({
+				_id,
+				userName,
+				password,
+				createdOn,
+				email: sanitizedEmail,
+				createdForms: userCreatedForms,
+				submissions: userSubmissions,
+			}),
+			toSecureObject: () => ({
+				_id,
+				userName,
+				createdOn,
+				email: sanitizedEmail,
+				createdForms: userCreatedForms,
+				submissions: userSubmissions,
+			})
 		})
 	}
 }

@@ -4,14 +4,15 @@ module.exports = function makeFormController({
 
 	safeAsyncCall,
 	translateInterfaceErrorCodeToHttpStatusCode,
-	parseToken,
+
+	authorizeControllerHelper,
 
 	addFormUseCase,
 	getFormUseCase,
 	getFormsListUseCase,
 	updateFormUseCase,
 	getFormForSubmissionUseCase,
-	getUserUseCase,
+
 	postFormUseCase,
 }) {
 
@@ -38,36 +39,17 @@ module.exports = function makeFormController({
 		getFormsList,
 		editForm,
 		deleteForm,
-
-		getSubmissionsList,
-		getSubmission,
-		editSubmission,
-		deleteSubmission,
-	}
-
-	function _createNotAuthorizedError() {
-		return makeHttpError({
-			errorData: {
-				message: 'Not authorized.'
-			},
-			code: 401,
-		})
 	}
 
 	async function createForm(httpRequest) {
 		const { ...formData } = httpRequest.body;
 		const { authorization: token } = httpRequest.headers;
 
-		if (!token) {
-			return _createNotAuthorizedError()
-		}
-		const [decryptedToken, tokenError] = await safeAsyncCall(parseToken(token))
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
-		if (tokenError) {
-			return _createNotAuthorizedError()
+		if (authorizationHttpError) {
+			return authorizationHttpError
 		}
-
-		const { id: userId } = decryptedToken
 
 		if (!formData) {
 			return makeHttpError({
@@ -78,7 +60,7 @@ module.exports = function makeFormController({
 			});
 		}
 
-		const [form, formCreateError] = await safeAsyncCall(addFormUseCase({ formData, userId }))
+		const [form, formCreateError] = await safeAsyncCall(addFormUseCase({ formData, userId: userData._id }))
 
 		if (formCreateError) {
 			return makeHttpError({
@@ -95,16 +77,11 @@ module.exports = function makeFormController({
 		const { authorization: token } = httpRequest.headers;
 		const { id: formId } = httpRequest.pathParams;
 
-		if (!token) {
-			return _createNotAuthorizedError()
-		}
-		const [decryptedToken, tokenError] = await safeAsyncCall(parseToken(token))
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
-		if (tokenError) {
-			return _createNotAuthorizedError()
+		if (authorizationHttpError) {
+			return authorizationHttpError
 		}
-
-		const { id: userId } = decryptedToken
 
 		if (!formId) {
 			return makeHttpError({
@@ -124,7 +101,7 @@ module.exports = function makeFormController({
 			});
 		}
 
-		const [result, formEditError] = await safeAsyncCall(updateFormUseCase({ formData, formId, userId }))
+		const [result, formEditError] = await safeAsyncCall(updateFormUseCase({ formData, formId, userId: userData._id }))
 
 		if (formEditError) {
 			return makeHttpError({
@@ -141,21 +118,15 @@ module.exports = function makeFormController({
 		const { id: formId } = httpRequest.pathParams;
 		const { format } = httpRequest.queryParams;
 
-		const [user, userError] = await safeAsyncCall(getUserUseCase({ token }))
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
-		if (userError) {
-			return makeHttpError({
-				errorData: {
-					...userError.toPlainObject(),
-					message: `Not authorized. ${userError.getMessage()}`
-				},
-				code: 401,
-			});
+		if (authorizationHttpError) {
+			return authorizationHttpError
 		}
 
 		if (format !== undefined) {
 			if (format === 'submission') {
-				const [form, formError] = await safeAsyncCall(getFormForSubmissionUseCase({ formId, userId: user.getId() }))
+				const [form, formError] = await safeAsyncCall(getFormForSubmissionUseCase({ formId, userId: userData._id }))
 
 				if (formError) {
 					return makeHttpError({
@@ -175,7 +146,7 @@ module.exports = function makeFormController({
 			}
 		}
 
-		const [form, formError] = await safeAsyncCall(getFormUseCase({ formId, userId: user.getId() }))
+		const [form, formError] = await safeAsyncCall(getFormUseCase({ formId, userId: userData._id }))
 
 		if (formError) {
 			return makeHttpError({
@@ -189,20 +160,13 @@ module.exports = function makeFormController({
 
 	async function getFormsList(httpRequest) {
 		const { authorization: token } = httpRequest.headers;
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
-		const [user, userError] = await safeAsyncCall(getUserUseCase({ token }))
-
-		if (userError) {
-			return makeHttpError({
-				errorData: {
-					...userError.toPlainObject(),
-					message: `Not authorized. ${userError.getMessage()}`
-				},
-				code: 401,
-			});
+		if (authorizationHttpError) {
+			return authorizationHttpError
 		}
 
-		const [formsList, formsListError] = await safeAsyncCall(getFormsListUseCase({ userId: user.getId() }))
+		const [formsList, formsListError] = await safeAsyncCall(getFormsListUseCase({ userId: userData._id }))
 
 		if (formsListError) {
 			return makeHttpError({
@@ -221,22 +185,14 @@ module.exports = function makeFormController({
 		const { id: formId } = httpRequest.pathParams;
 		const { answers } = httpRequest.body;
 
-		const [user, userError] = await safeAsyncCall(getUserUseCase({ token }))
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
-		if (userError) {
-			const userErrorData = userError.toPlainObject()
-
-			return makeHttpError({
-				errorData: {
-					...userErrorData,
-					message: `Not authorized. ${userError.getMessage()}`
-				},
-				code: translateInterfaceErrorCodeToHttpStatusCode(userError.getCode()),
-			});
+		if (authorizationHttpError) {
+			return authorizationHttpError
 		}
 
 		const [submitResult, submitError] = await safeAsyncCall(postFormUseCase({
-			userId: user.getId(),
+			userId: userData._id,
 			formData: {
 				formId,
 				answers,
@@ -252,12 +208,4 @@ module.exports = function makeFormController({
 
 		return makeHttpResponse(submitResult)
 	}
-
-	function getSubmissionsList (httpRequest) {}
-
-	function getSubmission (httpRequest) {}
-
-	function editSubmission (httpRequest) {}
-
-	function deleteSubmission (httpRequest) {}
 }

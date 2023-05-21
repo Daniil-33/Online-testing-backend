@@ -1,4 +1,4 @@
-module.exports.makeHttpError = function ({ errorData, code }) {
+function makeHttpError ({ errorData, code }) {
 	return {
 		headers: {
 			'Content-Type': 'application/json'
@@ -11,7 +11,7 @@ module.exports.makeHttpError = function ({ errorData, code }) {
 	}
 }
 
-module.exports.makeHttpResponse = function (data) {
+function makeHttpResponse (data) {
 	return {
 		headers: {
 			'Content-Type': 'application/json'
@@ -23,3 +23,17 @@ module.exports.makeHttpResponse = function (data) {
 		})
 	}
 }
+
+function fallbackServerError () {
+	return makeHttpError({
+		errorData: {
+			message: 'Internal server error.'
+		},
+		code: 500,
+	});
+}
+
+module.exports.makeHttpError = makeHttpError
+module.exports.makeHttpResponse = makeHttpResponse
+module.exports.fallbackServerError = fallbackServerError
+

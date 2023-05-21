@@ -14,7 +14,7 @@ module.exports = function makeUpdateForm ({
 
 	dataValidator,
 }={}) {
-	return function({ formData: newFormData, userId, formId }) {
+	return function updateForm ({ formData: newFormData, userId, formId }) {
 		return new Promise(async (resolve, reject) => {
 			dataValidator
 				.setData(newFormData)
@@ -27,26 +27,17 @@ module.exports = function makeUpdateForm ({
 				return reject(makeInvalidFormDataError('Invalid form data', dataValidator.getErrors()))
 			}
 
-			const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: userId }))
-
-			if (candidateError) {
-				return reject(makeInternalError(`Error while fetching user.`))
-			} else if (!candidate) {
-				return reject(makeUserNotFoundError(`User not found.`))
-			}
-
 			const [formData, formDataError] = await safeAsyncCall(formRepository.findById({ id: formId }))
 
 			if (formDataError) {
 				return reject(makeInternalError(`Error while fetching form.`))
 			} else if (!formData) {
-				return reject(makeUserNotFoundError(`Form not found.`))
+				return reject(makeInternalError(`Form not found.`))
 			}
 
 			const oldForm = makeForm(formData)
-			const user =  makeUser(candidate)
 
-			if (oldForm.getAuthorId() !== user.getId()) {
+			if (oldForm.getAuthorId() !== userId) {
 				return reject(makeForbiddenError(`You are not allowed to access this form.`))
 			}
 
@@ -68,17 +59,13 @@ module.exports = function makeUpdateForm ({
 				updatedOn: newForm.getUpdatedOn(),
 				title: newForm.getTitle(),
 				description: newForm.getDescription(),
-				questions: newForm.getPlainQuestions(),
+				questions: newForm.getPlainQuestions (),
 				submissions: newForm.getSubmissions(),
 				settings: newForm.getSettings(),
 			}))
 
 			if (updateError) {
-				return reject(makeInternalError(`Error while inserting form.`))
-			}
-
-			if (updateError) {
-				return reject(makeInternalError(`Error while updating user.`))
+				return reject(makeInternalError(`Error while updating form.`))
 			}
 
 			resolve({

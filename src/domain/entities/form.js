@@ -104,6 +104,17 @@ module.exports = function buildMakeForm ({
 
 				pushSubmission: (submissionId) => formSubmissions.push(submissionId),
 
+				toObject: () => ({
+					_id,
+					authorId,
+					title: sanitizedTitle,
+					description: sanitizedDescription,
+					questions: mapQuestions(formQuestions),
+					createdOn,
+					updatedOn,
+					submissions: formSubmissions,
+					settings
+				}),
 				toSubmissionFormat: () => ({
 					_id,
 					authorId,

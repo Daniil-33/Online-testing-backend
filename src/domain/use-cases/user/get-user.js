@@ -25,6 +25,7 @@ module.exports = function makeGetUser ({
 
 					ID = userId
 				}
+
 				const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: ID }))
 
 				if (candidateError) {
@@ -35,7 +36,7 @@ module.exports = function makeGetUser ({
 
 				const user = makeUser(candidate)
 
-				return resolve(user)
+				return resolve(user.toObject())
 			})
 		}
 };

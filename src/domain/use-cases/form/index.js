@@ -1,5 +1,30 @@
-const { formRepository, userRepository, submissionRepository } = require('../../repositories/')
-const { makeForm, makeUser, makeFormSubmission } = require('../../entities/')
+const {
+	formRepository,
+	userRepository,
+	submissionRepository
+} = require('../../repositories/')
+const {
+	makeForm,
+	makeUser,
+	makeFormSubmission
+} = require('../../entities/')
+const {
+	getUser: getUserUseCase,
+	updateUser: updateUserUseCase
+} = require('../user/')
+const { addSubmission: addSubmissionUseCase } = require('../submission/')
+
+const { safeAsyncCall, safeSyncCall } = require('../../../helpers/utils-helper')
+const {
+	makeUserNotFoundError,
+	makeInternalError,
+	makeForbiddenError,
+	makeFormNotFoundError,
+	makeInvalidFormDataError,
+	makeFormSubmissionValidationError,
+	makeFormNotAcceptingSubmissionsError,
+	makeFormAlreadySubmittedError,
+} = require('../../../helpers/use-case-error-helper')
 
 const makeAddForm = require('./add-form')
 const makeUpdateForm = require('./update-form')
@@ -7,17 +32,7 @@ const makeGetForm = require('./get-form')
 const makeGetFormsList = require('./get-forms-list')
 const makeGetFormForSubmission = require('./get-form-for-submission')
 const makePostForm = require('./post-form')
-
-const { safeAsyncCall, safeSyncCall } = require('../../../helpers/utils-helper')
-
-const {
-	makeUserNotFoundError,
-	makeInternalError,
-	makeForbiddenError,
-	makeFormNotFoundError,
-	makeInvalidFormDataError,
-	makeFormSubmissionValidationError
-} = require('../../../helpers/use-case-error-helper')
+const makeDeleteForm = require('./delete-form')
 
 const DataValidator = require('../../../helpers/data-validation-helper')
 const dataValidator = new DataValidator()
@@ -31,12 +46,14 @@ const addForm = makeAddForm({
 
 	safeAsyncCall,
 	safeSyncCall,
+	dataValidator,
 
 	makeUserNotFoundError,
 	makeInternalError,
 	makeInvalidFormDataError,
 
-	dataValidator,
+	getUserUseCase,
+	updateUserUseCase,
 })
 const getFormsList = makeGetFormsList({
 	userRepository,
@@ -71,10 +88,13 @@ const getFormForSubmission = makeGetFormForSubmission({
 	makeForm,
 
 	safeAsyncCall,
+
 	makeUserNotFoundError,
 	makeForbiddenError,
 	makeFormNotFoundError,
 	makeInternalError,
+	makeFormNotAcceptingSubmissionsError,
+	makeFormAlreadySubmittedError,
 })
 
 const updateForm = makeUpdateForm({
@@ -111,7 +131,22 @@ const postForm = makePostForm({
 	makeFormSubmissionValidationError,
 	makeInvalidFormDataError,
 
+	addSubmissionUseCase,
+
 	dataValidator,
+})
+const deleteForm = makeDeleteForm({
+	formRepository,
+
+	makeUser,
+	makeForm,
+
+	safeAsyncCall,
+	makeForbiddenError,
+	makeInternalError,
+
+	getUserUseCase,
+	getFormUseCase: getForm,
 })
 
 module.exports = {
@@ -121,4 +156,5 @@ module.exports = {
 	getFormsList,
 	getFormForSubmission,
 	postForm,
+	deleteForm,
 }

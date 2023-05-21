@@ -6,24 +6,17 @@ function checkAnswersAndCalculatePoints(form, answers) {
 		calculatedPoints
 	} = form
 		.getQuestions()
-		.reduce(({ checkedAnswersData, calculatedPoints }, question) => {
+		.reduce((calculatedPoints, question) => {
 			const questionId = question.getId()
-			const { checkedAnswerData, points } = question.validateAnswer(answers[questionId])
+			const { points } = question.validateAnswer(answers[questionId])
 
-			checkedAnswersData[questionId] = {
-				checkedAnswerData,
-				points
-			}
 
-			calculatedPoints += points
+			calculatedPoints[questionId] = points
 
-			return { checkedAnswersData, calculatedPoints }
-		}, { checkedAnswersData: {}, calculatedPoints: 0 })
+			return calculatedPoints
+		}, {})
 
-	return {
-		checkedAnswersData,
-		calculatedPoints
-	}
+	return calculatedPoints
 }
 
 function checkIsAllRequiredQuestionsAnswered(form, answers) {
@@ -51,9 +44,9 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 		createdOn = Date.now(),
 
 		form,
-		checkedAnswers={},
+		formId,
 		isChecked=false,
-		points=0,
+		points={},
 	} = {}) {
 		if (!Id.isValidId(id)) {
 			throw new Error('Submission must have a valid id.')
@@ -61,10 +54,6 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 
 		if (!Id.isValidId(submitterId)) {
 			throw new Error('Submission must have a valid submitter id.')
-		}
-
-		if (!form) {
-			throw new Error('To init submission you must to pass the form instance.')
 		}
 
 		if (!answers) {
@@ -75,43 +64,49 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 			throw new Error('Submission answers must be an object.')
 		}
 
+		const emptyAnswers = form && checkIsAllRequiredQuestionsAnswered(form, answers) || []
 		let initialPoints = points
-		let initialCheckedAnswers = checkedAnswers
-
-		const emptyAnswers = checkIsAllRequiredQuestionsAnswered(form, answers)
 
 		function checkUpSubmission() {
-			if (form.isTest() && !points) {
-				const { checkedAnswersData, calculatedPoints } = checkAnswersAndCalculatePoints(form, answers)
+			if (form && form.isTest() && !Object.keys(points || {}).length) {
+				const calculatedPoints = checkAnswersAndCalculatePoints(form, answers)
 
 				initialPoints = calculatedPoints
-				initialCheckedAnswers = checkedAnswersData
 			}
 		}
 
-		function setAnswerPointsById(questionId, points) {
-			if (initialCheckedAnswers[questionId] && initialCheckedAnswers[questionId].points !== points) {
-				initialPoints -= initialCheckedAnswers[questionId].points
-				initialPoints += points
+		function setPointsByAnswers(points={}) {
+			Object.entries(points).forEach(([questionId, points]) => {
+				if (initialPoints[questionId] !== points) {
+					initialPoints[questionId] = points
+				}
+			})
 
-				initialCheckedAnswers[questionId].points = points
-			}
+			isChecked = true
 		}
 
 		return Object.freeze({
 			getId: () => id,
 			getSubmitterId: () => submitterId,
-			getFormId: () => form.getId(),
+			getFormId: () => formId || form.getId(),
 			getAnswers: () => answers,
 			getCreatedOn: () => createdOn,
 			getPoints: () => initialPoints,
-			getCheckedAnswers: () => initialCheckedAnswers,
 			getEmptyAnswers: () => emptyAnswers,
 
 			isChecked: () => isChecked,
 
 			checkUp: () => checkUpSubmission(),
-			setAnswerPointsById,
+			setPointsByAnswers,
+
+			toObject: () => ({
+				id,
+				submitterId,
+				formId,
+				answers,
+				createdOn,
+				points: initialPoints,
+			})
 		})
 	}
 }

@@ -4,13 +4,6 @@ const { safeAsyncCall } = require('../../helpers/utils-helper');
 const { translateInterfaceErrorCodeToHttpStatusCode } = require('../../helpers/use-case-error-helper');
 const { makeHttpError, makeHttpResponse } = require('../../helpers/http-helper');
 
-const JWT = require('../../helpers/jwt-helper')
-
-function parseToken (token) {
-	return JWT.verify(token, process.env.JWT_SECRET)
-}
-
-
 const {
 	userRegister,
 	userLoginWithCredentials,
@@ -27,8 +20,33 @@ const {
 	postForm,
 } = require('../../domain/use-cases/form');
 
+const {
+	getSubmissionsList,
+	getSubmission,
+	deleteSubmission,
+} = require('../../domain/use-cases/submission');
+
 const makeUserController = require('./userController');
 const makeFormController = require('./formController');
+const makeSubmissionController = require('./submissionController');
+
+function authorizeControllerHelper (token) {
+	return new Promise(async (resolve, reject) => {
+		const [userData, userError] = await safeAsyncCall(getUser({ token }))
+
+		if (userError) {
+			return reject(makeHttpError({
+				errorData: {
+					...userError.toPlainObject(),
+					message: `Not authorized. ${userError.getMessage()}`
+				},
+				code: 401,
+			}));
+		}
+
+		return resolve(userData)
+	})
+}
 
 const userController = makeUserController({
 	makeHttpError,
@@ -48,7 +66,7 @@ const formController = makeFormController({
 
 	safeAsyncCall,
 	translateInterfaceErrorCodeToHttpStatusCode,
-	parseToken,
+	authorizeControllerHelper,
 
 	addFormUseCase: addForm,
 	getFormUseCase: getForm,
@@ -56,7 +74,15 @@ const formController = makeFormController({
 	updateFormUseCase: updateForm,
 	getFormForSubmissionUseCase: getFormForSubmission,
 	postFormUseCase: postForm,
-	getUserUseCase: getUser
+})
+
+const submissionController = makeSubmissionController({
+	makeHttpError,
+	makeHttpResponse,
+
+	safeAsyncCall,
+	translateInterfaceErrorCodeToHttpStatusCode,
+	authorizeControllerHelper,
 })
 
 module.exports = {

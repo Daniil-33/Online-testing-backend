@@ -1,4 +1,4 @@
-module.exports.buildMakeDeleteSubmission = function ({
+module.exports.buildMakeUpdateSubmissionPoints = function ({
 	submissionRepository,
 
 	safeAsyncCall,
@@ -12,7 +12,7 @@ module.exports.buildMakeDeleteSubmission = function ({
 	getSubmissionUseCase,
 	getFormUseCase,
 } = {}) {
-	return async function({ userId, submissionId }) {
+	return async function({ userId, submissionId, pointsByAnswers }) {
 		return new Promise(async (resolve, reject) => {
 			const [submissionData, submissionError] = await safeAsyncCall(getSubmissionUseCase({ submissionId, userId }))
 
@@ -29,17 +29,21 @@ module.exports.buildMakeDeleteSubmission = function ({
 
 			const form = makeForm(formData)
 
-			if (submission.getSubmitterId() !== userId || form.getAuthorId() !== userId) {
-				return reject(makeForbiddenError(`You are not allowed to access this submission.`))
+			if (form.getAuthorId() !== userId) {
+				return reject(makeForbiddenError(`You are not allowed to access this form.`))
 			}
 
-			const [deleteResult, deleteError] = await safeAsyncCall(submissionRepository.deleteById({ id: submissionId }))
+			submission.setPointsByAnswers(pointsByAnswers)
 
-			if (deleteError) {
-				return reject(makeInternalError(`Error while deleting submission.`))
+			const [updatedSubmission, updateError] = await safeAsyncCall(submissionRepository.updateById(submission.toObject()))
+
+			if (updateError) {
+				return reject(makeInternalError(`Error while updating submission.`))
 			}
 
-			return resolve(true)
+			return resolve(Object.freeze({
+				submission: submission.toObject(),
+			}))
 		})
 	}
 }

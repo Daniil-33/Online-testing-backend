@@ -7,14 +7,15 @@ module.exports = function makeAddForm ({
 
 		safeAsyncCall,
 		safeSyncCall,
+		dataValidator,
 
-		makeUserNotFoundError,
 		makeInternalError,
 		makeInvalidFormDataError,
 
-		dataValidator,
+		getUserUseCase,
+		updateUserUseCase,
 	}={}) {
-		return function({ formData, userId }) {
+		return function addForm({ formData, userId }) {
 			return new Promise(async (resolve, reject) => {
 				dataValidator
 					.setData(formData)
@@ -27,20 +28,13 @@ module.exports = function makeAddForm ({
 					return reject(makeInvalidFormDataError('Invalid form data', dataValidator.getErrors()))
 				}
 
-				const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: userId }))
-
-				if (candidateError) {
-					return reject(makeInternalError(`Error while fetching user.`))
-				} else if (!candidate) {
-					return reject(makeUserNotFoundError(`User not found.`))
-				}
-
-				const [user, userError] = makeUser(candidate)
+				const [userData, userError] = await safeAsyncCall(getUserUseCase({ userId }))
 
 				if (userError) {
-					return reject(makeInternalError(userError.message))
+					return reject(userError)
 				}
 
+				const user = makeUser(userData)
 				const [form, formError] = safeSyncCall(() => makeForm({
 					...formData,
 					authorId: user.getId()
@@ -69,13 +63,10 @@ module.exports = function makeAddForm ({
 
 				user.pushCreatedForm(form.getId())
 
-				const [updateResult, updateError] = await safeAsyncCall(userRepository.updateById({
-					id: user.getId(),
-					createdForms: user.getCreatedForms()
-				}))
+				const [updateResult, updateError] = await safeAsyncCall(updateUserUseCase({ userData: user.toObject() }))
 
 				if (updateError) {
-					return reject(makeInternalError(`Error while updating user.`))
+					return reject(updateError)
 				}
 
 				resolve({

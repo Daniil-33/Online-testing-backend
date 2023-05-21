@@ -11,8 +11,6 @@ function adaptExpressRequest (req={}) {
 
 function makeExpressResponseHandler (res={}) {
 	return function handle({ headers, statusCode, data }) {
-		console.log('response', {headers, statusCode, data})
-
 		res.set(headers)
 		res.status(statusCode || 500)
 		res.send(data)

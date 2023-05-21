@@ -1,5 +1,4 @@
 module.exports = function makeGetForm ({
-	userRepository,
 	formRepository,
 
 	makeUser,
@@ -7,21 +6,23 @@ module.exports = function makeGetForm ({
 
 	safeAsyncCall,
 
-	makeUserNotFoundError,
 	makeForbiddenError,
 	makeFormNotFoundError,
 	makeInternalError,
-}={}) {
-	return function({ formId, userId }) {
-		return new Promise(async (resolve, reject) => {
-			const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: userId }))
+	makeFormNotAcceptingSubmissionsError,
+	makeFormAlreadySubmittedError,
 
-			if (candidateError) {
-				return reject(makeInternalError(`Error while fetching user.`))
-			} else if (!candidate) {
-				return reject(makeUserNotFoundError(`User does not exist.`))
+	getUserUseCase,
+}={}) {
+	return function getFormForSubmission({ formId, userId }) {
+		return new Promise(async (resolve, reject) => {
+			const [userData, userError] = await safeAsyncCall(getUserUseCase({ userId }))
+
+			if (userError) {
+				return reject(userError)
 			}
 
+			const user = makeUser(userData)
 			const [formData, formError] = await safeAsyncCall(formRepository.findById({ id: formId }))
 
 			if (formError) {
@@ -30,20 +31,17 @@ module.exports = function makeGetForm ({
 				return reject(makeFormNotFoundError(`Form does not exist.`))
 			}
 
-			const user = makeUser(candidate)
 			const form = makeForm(formData)
 
 			if (!form.isAcceptingSubmissions()) {
-				// TODO: Add a new error type for this.
-				return reject(makeForbiddenError(`Form is not accepting submissions.`))
+				return reject(makeFormNotAcceptingSubmissionsError(`Form is not accepting submissions.`))
 			}
 
 			const userSubmissions = user.getSubmissions()
 			const isFormHasSubmissionFromUser = form.getSubmissions().some(submissionId => userSubmissions.includes(submissionId))
 
 			if (isFormHasSubmissionFromUser && form.isSubmitOnce()) {
-				// TODO: Add a new error type for this.
-				return reject(makeForbiddenError(`You are not allowed to submit this form more than once.`))
+				return reject(makeFormAlreadySubmittedError(`You are not allowed to submit this form more than once.`))
 			}
 
 			return resolve(Object.freeze({

@@ -160,6 +160,7 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 		content = {},
 		isRequired = false,
 		createdOn = Date.now(),
+		timeLimit = 0,
 	} = {}) {
 		if (!title) {
 			throw new Error('Form question must have a question.')
@@ -186,6 +187,7 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 			getAnswerSettings: () => answerSettings,
 			getContent: () => content,
 			isRequired: () => isRequired,
+			getTimeLimit: () => timeLimit,
 			getTitle: () => sanitizedTitle,
 
 			setAnswer: (newAnswer) => currentQuestionAnswer = newAnswer,

@@ -1,9 +1,12 @@
 module.exports = function makeUserRouter({
 	router,
 	formController,
-	handleRouteRequest
+	adaptExpressRequest,
+	handleRouteRequest,
+	handleRouteRequestProxy,
 }) {
 	const routerInstance = router()
+	const proxiedHandleRouteRequest = handleRouteRequestProxy(handleRouteRequest)
 
 	/*
 		POST - /form (create form)
@@ -19,20 +22,13 @@ module.exports = function makeUserRouter({
 		PUT - /form/:id/submissions/:submissionId (update submission for form)
 		DELETE - /form/:id/submissions/:submissionId (delete submission for form)
 	*/
-	console.log('formController', handleRouteRequest);
-	routerInstance.post('/', (req, res) => handleRouteRequest(req, res, formController.createForm))
-	routerInstance.post('/:id', (req, res) => handleRouteRequest(req, res, formController.submitForm))
+	routerInstance.post('/', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.createForm))
+	routerInstance.post('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.submitForm))
 
-	routerInstance.get('/', (req, res) => handleRouteRequest(req, res, formController.getFormsList))
-	routerInstance.get('/:id', (req, res) => handleRouteRequest(req, res, formController.getForm))
-	routerInstance.put('/:id', (req, res) => handleRouteRequest(req, res, formController.editForm))
-	routerInstance.delete('/:id', (req, res) => handleRouteRequest(req, res, formController.deleteForm))
-
-	routerInstance.get('/:id/submissions', (req, res) => handleRouteRequest(req, res, formController.getSubmissionsList))
-	routerInstance.get('/:id/submissions/:submissionId', (req, res) => handleRouteRequest(req, res, formController.getSubmission))
-	routerInstance.put('/:id/submissions/:submissionId', (req, res) => handleRouteRequest(req, res, formController.editSubmission))
-	routerInstance.delete('/:id/submissions/:submissionId', (req, res) => handleRouteRequest(req, res, formController.deleteSubmission))
-
+	routerInstance.get('/', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.getFormsList))
+	routerInstance.get('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.getForm))
+	routerInstance.put('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.editForm))
+	routerInstance.delete('/:id', (req, res) => proxiedHandleRouteRequest(adaptExpressRequest(req), res, formController.deleteForm))
 
 	return routerInstance
 }

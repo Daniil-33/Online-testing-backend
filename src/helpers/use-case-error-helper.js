@@ -6,6 +6,8 @@ const USE_CASES_ERROR_CODES = {
 	INTERNAL: 'INTERNAL',
 	FORBIDDEN: 'FORBIDDEN',
 	FORM_NOT_FOUND: 'FORM_NOT_FOUND',
+	FORM_NOT_ACCEPTING_SUBMISSIONS: 'FORM_NOT_ACCEPTING_SUBMISSIONS',
+	FORM_ALREADY_SUBMITTED: 'FORM_ALREADY_SUBMITTED',
 	INVALID_FORM_DATA: 'INVALID_FORM_DATA',
 	SUBMISSION_VALIDATION_ERROR: 'SUBMISSION_VALIDATION_ERROR',
 }
@@ -15,17 +17,16 @@ module.exports.USE_CASES_ERROR_CODES = USE_CASES_ERROR_CODES;
 module.exports.translateInterfaceErrorCodeToHttpStatusCode = function (errorCode) {
 	switch (errorCode) {
 		case USE_CASES_ERROR_CODES.INVALID_FORM_DATA:
-			return 400;
 		case USE_CASES_ERROR_CODES.SUBMISSION_VALIDATION_ERROR:
 			return 400;
 		case USE_CASES_ERROR_CODES.INVALID_TOKEN:
-			return 401;
 		case USE_CASES_ERROR_CODES.INVALID_CREDENTIALS:
 			return 401;
 		case USE_CASES_ERROR_CODES.FORBIDDEN:
+		case USE_CASES_ERROR_CODES.FORM_NOT_ACCEPTING_SUBMISSIONS:
+		case USE_CASES_ERROR_CODES.FORM_ALREADY_SUBMITTED:
 			return 403;
 		case USE_CASES_ERROR_CODES.USER_NOT_FOUND:
-			return 404;
 		case USE_CASES_ERROR_CODES.FORM_NOT_FOUND:
 			return 404;
 		case USE_CASES_ERROR_CODES.USER_ALREADY_EXISTS:
@@ -136,5 +137,19 @@ module.exports.makeFormSubmissionValidationError = function (message, body=null)
 		message,
 		interfaceCode: USE_CASES_ERROR_CODES.SUBMISSION_VALIDATION_ERROR,
 		...(body ? { body } : {} )
+	})
+}
+
+module.exports.makeFormNotAcceptingSubmissionsError = function (message) {
+	return new UseCaseError({
+		message,
+		interfaceCode: USE_CASES_ERROR_CODES.FORM_NOT_ACCEPTING_SUBMISSIONS
+	})
+}
+
+module.exports.makeFormAlreadySubmittedError = function (message) {
+	return new UseCaseError({
+		message,
+		interfaceCode: USE_CASES_ERROR_CODES.FORM_ALREADY_SUBMITTED
 	})
 }
