@@ -107,6 +107,13 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 				answers,
 				createdOn,
 				points: initialPoints,
+			}),
+			toMetaDataObject: () => ({
+				_id,
+				submitterId,
+				formId,
+				createdOn,
+				points: initialPoints,
 			})
 		})
 	}

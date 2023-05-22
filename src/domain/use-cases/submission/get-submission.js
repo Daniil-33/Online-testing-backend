@@ -34,24 +34,27 @@ module.exports = function buildMakeGetSubmission ({
 				return reject(makeForbiddenError(`You are not allowed to access this submission.`))
 			}
 
-			const formattedSubmission = form
+			const formattedSubmissionQuestionsAnswers = form
 				.getQuestions()
 				.map((question) => {
 					if (form.isTest() && !submission.isChecked()) {
-						return {
-							...question.toObject(),
-							answer: submission.getAnswer(question.getId()),
-						}
+						return question.renderQuestionWithAnswer(submission.getAnswer(question.getId()), true)
 					}
 
-					return {
-						...question.toSecureObject(),
-						answer: submission.getAnswer(question.getId()),
-					}
+					return question.renderQuestionWithAnswer(submission.getAnswer(question.getId()), false)
 				})
 
 			return resolve(Object.freeze({
-				submission: formattedSubmission
+				submission: {
+					id: submission.getId(),
+					formId: submission.getFormId(),
+					submitterId: submission.getSubmitterId(),
+
+					submissionData: submission.toMetaDataObject(),
+					formData: form.toMetaDataObject(),
+
+					questions: formattedSubmissionQuestionsAnswers
+				}
 			}))
 		})
 	}

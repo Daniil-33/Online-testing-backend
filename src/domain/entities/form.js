@@ -121,6 +121,14 @@ module.exports = function buildMakeForm ({
 					title: sanitizedTitle,
 					description: sanitizedDescription,
 					createdOn,
+
+					settings: {
+						isAllQuestionsRequired: settings.allQuestionsRequired,
+						mixQuestions: settings.mixQuestions,
+						formView: settings.formView,
+						questionDefaultTimeLimit: settings.questionDefaultTimeLimit,
+						generalTimeLimit: settings.generalTimeLimit,
+					}
 				}),
 				toSubmissionFormat: () => ({
 					_id,

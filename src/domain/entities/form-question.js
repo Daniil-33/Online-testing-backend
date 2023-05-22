@@ -8,56 +8,70 @@ const FORM_QUESTION_TYPES = {
 }
 
 // Validators
-function shortTextValidator(answer, answerSettings) {
+function shortTextValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	const sanitizedAnswer = answer.trim().toLowerCase()
 	const matchedCorrectAnswer = answerSettings.options.find(option => option.text.trim().toLowerCase() === sanitizedAnswer)
 
 	return {
-		checkedAnswerData: {
-			answer: answer
+		answerData: {
+			answer: answer,
+			isCorrectAnswer: !!matchedCorrectAnswer,
+			...(withCorrectAnswers ? {
+				correctAnswersData:answerSettings.options.map(({ text }) => text)
+			} : {})
 		},
 		points: matchedCorrectAnswer ? answerSettings.points : 0
 	}
 }
 
-function detailedTextValidator(answer, answerSettings) {
+function detailedTextValidator(content, answer) {
 	return {
-		checkedAnswerData: {
+		answerData: {
 			answer: answer
 		},
 		points: 0
 	}
 }
 
-function singleOptionValidator(answer, answerSettings) {
-	const matchedCorrectAnswer = answerSettings.options.find(option => option.id === answer.selected)
-	const isCustomAnswerAvailable = answerSettings.options.some(option => option.isCustomAnswer)
-	const isSelectedAnswerCustom = answerSettings.options.find(option => option.id === answer.selected)?.isCustomAnswer
+function singleOptionValidator(content, answer, answerSettings, withCorrectAnswers = false) {
+	const matchedCorrectAnswer = answerSettings.options.find(id => id === answer.selected)
+	const isCustomAnswerAvailable = content.options.some(option => option.isCustomAnswer)
+	const isSelectedAnswerCustom = answerSettings.options.find(id => id === answer.selected)?.isCustomAnswer
 
 	return {
-		checkedAnswerData: {
+		answerData: {
 			answer: answer.selected,
-			customAnswer: isSelectedAnswerCustom ? answer.customAnswerText : null
+			customAnswer: isSelectedAnswerCustom ? answer.customAnswerText : null,
+
+			isCorrectAnswer: !!matchedCorrectAnswer,
+			...(withCorrectAnswers ? {
+				correctAnswersData: answerSettings.options
+			} : {})
 		},
 		points: isCustomAnswerAvailable ? 0 : (matchedCorrectAnswer ? answerSettings.points : 0)
 	}
 }
 
-function multipleOptionsValidator(answer, answerSettings) {
-	const isAllSelectedOptionsCorrect = answer.selected.every(selectedOption => answerSettings.options.some(option => option.id === selectedOption)) && answer.selected.length === answerSettings.options.length
-	const isCustomAnswerAvailable = answerSettings.options.some(option => option.isCustomAnswer)
-	const isAnySelectedOptionCustom = answer.selected.some(selectedOption => answerSettings.options.find(option => option.id === selectedOption)?.isCustomAnswer)
+function multipleOptionsValidator(content, answer, answerSettings, withCorrectAnswers = false) {
+	const isAllSelectedOptionsCorrect = answer.selected.every(selectedOption => answerSettings.options.some(id => id === selectedOption)) && answer.selected.length === answerSettings.options.length
+	const isCustomAnswerAvailable = content.options.some(option => option.isCustomAnswer)
+	const isAnySelectedOptionCustom = answer.selected.some(selectedOption => answerSettings.options.find(id => id === selectedOption)?.isCustomAnswer)
 
 	return {
-		checkedAnswerData: {
+		answerData: {
 			answer: answer.selected,
-			customAnswer: isAnySelectedOptionCustom ? answer.customAnswerText : null
+			customAnswer: isAnySelectedOptionCustom ? answer.customAnswerText : null,
+
+			isCorrectAnswer: isAllSelectedOptionsCorrect,
+			...(withCorrectAnswers ? {
+				correctAnswersData: answerSettings.options.map((id) => id)
+			} : {})
 		},
 		points: isCustomAnswerAvailable ? 0 : (isAllSelectedOptionsCorrect ? answerSettings.points : 0)
 	}
 }
 
-function singleOptionsGridValidator(answer, answerSettings) {
+function singleOptionsGridValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	const aggregatedPoints = Object.entries(answerSettings).reduce((totalPoints, [ rowId, { id: correctColId, points } ]) => {
 		const isSelectedColCorrect = answer[rowId] === correctColId
 
@@ -65,14 +79,24 @@ function singleOptionsGridValidator(answer, answerSettings) {
 	}, 0)
 
 	return {
-		checkedAnswerData: {
-			answer: answer
+		answerData: {
+			answer: answer,
+
+			isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColId } ]) => answer[rowId] === correctColId),
+			...(withCorrectAnswers ? {
+				correctAnswersData: Object.entries(answerSettings).reduce((correctAnswersData, [ rowId, { id: correctColId } ]) => {
+					return {
+						...correctAnswersData,
+						[rowId]: correctColId
+					}
+				}, {})
+			} : {})
 		},
 		points: aggregatedPoints
 	}
 }
 
-function multipleOptionsGridValidator(answer, answerSettings) {
+function multipleOptionsGridValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	const aggregatedPoints = Object.entries(answerSettings).reduce((totalPoints, [ rowId, { id: correctColIds, points } ]) => {
 		const isSelectedColCorrect = correctColIds.every(colId => answer[rowId].includes(colId))
 
@@ -80,8 +104,18 @@ function multipleOptionsGridValidator(answer, answerSettings) {
 	}, 0)
 
 	return {
-		checkedAnswerData: {
-			answer: answer
+		answerData: {
+			answer: answer,
+
+			isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColIds } ]) => correctColIds.every(colId => answer[rowId].includes(colId))),
+			...(withCorrectAnswers ? {
+				correctAnswersData: Object.entries(answerSettings).reduce((correctAnswersData, [ rowId, { id: correctColIds } ]) => {
+					return {
+						...correctAnswersData,
+						[rowId]: correctColIds
+					}
+				}, {})
+			} : {}),
 		},
 		points: aggregatedPoints
 	}
@@ -159,7 +193,6 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 		answerSettings = {},
 		content = {},
 		isRequired = false,
-		createdOn = Date.now(),
 		timeLimit = 0,
 	} = {}) {
 		if (!title) {
@@ -183,7 +216,6 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 		return Object.freeze({
 			getId: () => id,
 			getType: () => type,
-			getCreatedOn: () => createdOn,
 			getAnswerSettings: () => answerSettings,
 			getContent: () => content,
 			isRequired: () => isRequired,
@@ -191,27 +223,34 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 			getTitle: () => sanitizedTitle,
 
 			setAnswer: (newAnswer) => currentQuestionAnswer = newAnswer,
-			validateAnswer: () => validator(currentQuestionAnswer, answerSettings),
+			validateAnswer: () => validator(content, currentQuestionAnswer, answerSettings),
 			hasAnswer: () => hasAnswerChecker(currentQuestionAnswer),
 
 			// Secure object don't have any info about right answers
-			toSecureObject: () => ({
-				id,
-				title: sanitizedTitle,
-				type,
-				content,
-				isRequired,
-				timeLimit,
-			}),
-			toObject: () => ({
-				id,
-				title: sanitizedTitle,
-				type,
-				content,
-				isRequired,
-				timeLimit,
-				answerSettings,
-			})
+			toSecureObject: function () {
+				return {
+					id,
+					title: sanitizedTitle,
+					type,
+					content,
+					isRequired,
+					timeLimit,
+				}
+			},
+			toObject: function () {
+				return {
+					...(this.toSecureObject()),
+					answerSettings,
+				}
+			},
+			renderQuestionWithAnswer: function (answer, withCorrectAnswers) {
+				const { answerData } = validator(content, answer, answerSettings, withCorrectAnswers)
+
+				return {
+					...this.toSecureObject(),
+					answerData
+				}
+			},
 		})
 	}
 }
