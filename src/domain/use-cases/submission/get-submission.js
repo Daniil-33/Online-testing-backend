@@ -10,7 +10,12 @@ module.exports = function buildMakeGetSubmission ({
 
 	getFormsUseCases,
 } = {}) {
-	return async function({ submissionId, userId }) {
+	return async function({
+		submissionId,
+		userId,
+
+		fullSubmissionObject = false,
+	}) {
 		return new Promise(async (resolve, reject) => {
 			const { getFormUseCase } = getFormsUseCases()
 
@@ -34,10 +39,17 @@ module.exports = function buildMakeGetSubmission ({
 				return reject(makeForbiddenError(`You are not allowed to access this submission.`))
 			}
 
+			if (fullSubmissionObject) {
+				return resolve(Object.freeze({
+					submission: submission.toObject(),
+				}))
+			}
+
+			const isRequestedByFormAuthor = submission.getSubmitterId() === form.getAuthorId()
 			const formattedSubmissionQuestionsAnswers = form
 				.getQuestions()
 				.map((question) => {
-					if (form.isTest() && !submission.isChecked()) {
+					if (form.isTest() && (isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true))) {
 						return question.renderQuestionWithAnswer(submission.getAnswer(question.getId()), true)
 					}
 
@@ -46,13 +58,9 @@ module.exports = function buildMakeGetSubmission ({
 
 			return resolve(Object.freeze({
 				submission: {
-					id: submission.getId(),
-					formId: submission.getFormId(),
-					submitterId: submission.getSubmitterId(),
-
-					submissionData: submission.toMetaDataObject(),
+					...(form.isTest() && (isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true) ? { aggregatedPoints: submission.getAggregatedPoints() } : {})),
+					...submission.toMetaDataObject(),
 					formData: form.toMetaDataObject(),
-
 					questions: formattedSubmissionQuestionsAnswers
 				}
 			}))

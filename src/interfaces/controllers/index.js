@@ -5,25 +5,28 @@ const { translateInterfaceErrorCodeToHttpStatusCode } = require('../../helpers/u
 const { makeHttpError, makeHttpResponse } = require('../../helpers/http-helper');
 
 const {
-	userRegister,
-	userLoginWithCredentials,
-	userLoginWithToken,
+	userRegister: userRegisterUseCase,
+	userLoginWithCredentials: userLoginWithCredentialsUseCase,
+	userLoginWithToken: userLoginWithTokenUseCase,
 	getUser,
 } = require('../../domain/use-cases/user');
 
 const {
-	addForm,
-	updateForm,
-	getForm,
-	getFormsList,
-	getFormForSubmission,
-	postForm,
+	addForm: addFormUseCase,
+	updateForm: updateFormUseCase,
+	getForm: getFormUseCase,
+	getFormsList: getFormsListUseCase,
+	getFormForSubmission: getFormForSubmissionUseCase,
+	postForm: postFormUseCase,
+	deleteForm: deleteFormUseCase,
 } = require('../../domain/use-cases/form');
 
 const {
 	getSubmissionsList: getSubmissionsListUseCase,
 	getSubmission: getSubmissionUseCase,
+	updateSubmissionPoints: updateSubmissionPointsUseCase,
 	deleteSubmission: deleteSubmissionUseCase,
+	getSubmissionsAnalytic: getSubmissionsAnalyticUseCase,
 } = require('../../domain/use-cases/submission');
 
 const makeUserController = require('./userController');
@@ -55,9 +58,9 @@ const userController = makeUserController({
 	safeAsyncCall,
 	translateInterfaceErrorCodeToHttpStatusCode,
 
-	registerUserUseCase: userRegister,
-	loginUserWithCredentialsUseCase: userLoginWithCredentials,
-	loginUserWithTokenUseCase: userLoginWithToken,
+	userRegisterUseCase,
+	userLoginWithCredentialsUseCase,
+	userLoginWithTokenUseCase,
 })
 
 const formController = makeFormController({
@@ -68,12 +71,17 @@ const formController = makeFormController({
 	translateInterfaceErrorCodeToHttpStatusCode,
 	authorizeControllerHelper,
 
-	addFormUseCase: addForm,
-	getFormUseCase: getForm,
-	getFormsListUseCase: getFormsList,
-	updateFormUseCase: updateForm,
-	getFormForSubmissionUseCase: getFormForSubmission,
-	postFormUseCase: postForm,
+	addFormUseCase,
+	getFormUseCase,
+	getFormsListUseCase,
+	updateFormUseCase,
+	getFormForSubmissionUseCase,
+	postFormUseCase,
+	deleteFormUseCase,
+
+	getSubmissionsListUseCase,
+	deleteSubmissionUseCase,
+	getSubmissionsAnalyticUseCase,
 })
 
 const submissionController = makeSubmissionController({
@@ -86,8 +94,8 @@ const submissionController = makeSubmissionController({
 
 	getSubmissionUseCase,
 	getSubmissionsListUseCase,
-	// updateSubmissionPointsUseCase,
-	deleteSubmissionUseCase,
+	updateSubmissionPointsUseCase,
+	// deleteSubmissionUseCase,
 })
 
 module.exports = {

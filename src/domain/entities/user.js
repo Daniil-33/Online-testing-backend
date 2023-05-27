@@ -41,6 +41,7 @@ module.exports = function buildMakeUser ({
 		const userCreatedForms = [...createdForms]
 
 		return Object.freeze({
+			// Getters
 			getId: () => _id,
 			getUserName: () => userName,
 			getCreatedOn: () => createdOn,
@@ -49,9 +50,13 @@ module.exports = function buildMakeUser ({
 			getEmail: () => sanitizedEmail,
 			getPassword: () => password,
 
-			pushSubmission: (submissionId) => userSubmissions.push(submissionId),
-			pushCreatedForm: (formId) => userCreatedForms.push(formId),
+			// General mutations methods
+			addSubmission: (submissionId) => userSubmissions.push(submissionId),
+			removeSubmission: (submissionId) => userSubmissions.splice(userSubmissions.indexOf(submissionId), 1),
+			addCreatedForm: (formId) => userCreatedForms.push(formId),
+			removeCreatedForm: (formId) => userCreatedForms.splice(userCreatedForms.indexOf(formId), 1),
 
+			// Formatting methods
 			toObject: () => ({
 				_id,
 				userName,
@@ -61,6 +66,7 @@ module.exports = function buildMakeUser ({
 				createdForms: userCreatedForms,
 				submissions: userSubmissions,
 			}),
+
 			toSecureObject: () => ({
 				_id,
 				userName,
@@ -68,7 +74,13 @@ module.exports = function buildMakeUser ({
 				email: sanitizedEmail,
 				createdForms: userCreatedForms,
 				submissions: userSubmissions,
-			})
+			}),
+
+			toMetaDataObject: () => ({
+				_id,
+				userName,
+				email: sanitizedEmail,
+			}),
 		})
 	}
 }

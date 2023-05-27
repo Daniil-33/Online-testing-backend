@@ -15,9 +15,10 @@ function shortTextValidator(content, answer, answerSettings, withCorrectAnswers 
 	return {
 		answerData: {
 			answer: answer,
-			isCorrectAnswer: !!matchedCorrectAnswer,
 			...(withCorrectAnswers ? {
-				correctAnswersData:answerSettings.options.map(({ text }) => text)
+				isCorrectAnswer: !!matchedCorrectAnswer,
+				correctAnswersData: answerSettings.options.map(({ text }) => text),
+				maxPoints: answerSettings.points
 			} : {})
 		},
 		points: matchedCorrectAnswer ? answerSettings.points : 0
@@ -36,16 +37,17 @@ function detailedTextValidator(content, answer) {
 function singleOptionValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	const matchedCorrectAnswer = answerSettings.options.find(id => id === answer.selected)
 	const isCustomAnswerAvailable = content.options.some(option => option.isCustomAnswer)
-	const isSelectedAnswerCustom = answerSettings.options.find(id => id === answer.selected)?.isCustomAnswer
+	const isSelectedAnswerCustom = content.options.find(option => option.id === answer.selected)?.isCustomAnswer
 
 	return {
 		answerData: {
 			answer: answer.selected,
 			customAnswer: isSelectedAnswerCustom ? answer.customAnswerText : null,
 
-			isCorrectAnswer: !!matchedCorrectAnswer,
 			...(withCorrectAnswers ? {
-				correctAnswersData: answerSettings.options
+				isCorrectAnswer: !!matchedCorrectAnswer,
+				correctAnswersData: answerSettings.options,
+				maxPoints: answerSettings.points
 			} : {})
 		},
 		points: isCustomAnswerAvailable ? 0 : (matchedCorrectAnswer ? answerSettings.points : 0)
@@ -55,16 +57,17 @@ function singleOptionValidator(content, answer, answerSettings, withCorrectAnswe
 function multipleOptionsValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	const isAllSelectedOptionsCorrect = answer.selected.every(selectedOption => answerSettings.options.some(id => id === selectedOption)) && answer.selected.length === answerSettings.options.length
 	const isCustomAnswerAvailable = content.options.some(option => option.isCustomAnswer)
-	const isAnySelectedOptionCustom = answer.selected.some(selectedOption => answerSettings.options.find(id => id === selectedOption)?.isCustomAnswer)
+	const isAnySelectedOptionCustom = answer.selected.some(selectedOption => content.options.find(option => option.id === selectedOption)?.isCustomAnswer)
 
 	return {
 		answerData: {
 			answer: answer.selected,
 			customAnswer: isAnySelectedOptionCustom ? answer.customAnswerText : null,
 
-			isCorrectAnswer: isAllSelectedOptionsCorrect,
 			...(withCorrectAnswers ? {
-				correctAnswersData: answerSettings.options.map((id) => id)
+				isCorrectAnswer: isAllSelectedOptionsCorrect,
+				correctAnswersData: answerSettings.options.map((id) => id),
+				maxPoints: answerSettings.points
 			} : {})
 		},
 		points: isCustomAnswerAvailable ? 0 : (isAllSelectedOptionsCorrect ? answerSettings.points : 0)
@@ -72,24 +75,26 @@ function multipleOptionsValidator(content, answer, answerSettings, withCorrectAn
 }
 
 function singleOptionsGridValidator(content, answer, answerSettings, withCorrectAnswers = false) {
-	const aggregatedPoints = Object.entries(answerSettings).reduce((totalPoints, [ rowId, { id: correctColId, points } ]) => {
+	const aggregatedPoints = Object.entries(answerSettings).reduce((calculatedPoints, [ rowId, { id: correctColId, points } ]) => {
 		const isSelectedColCorrect = answer[rowId] === correctColId
+		calculatedPoints[rowId] = isSelectedColCorrect ? points : 0
 
-		return totalPoints + (isSelectedColCorrect ? points : 0)
-	}, 0)
+		return calculatedPoints
+	}, {})
 
 	return {
 		answerData: {
 			answer: answer,
 
-			isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColId } ]) => answer[rowId] === correctColId),
 			...(withCorrectAnswers ? {
+				isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColId } ]) => answer[rowId] === correctColId),
 				correctAnswersData: Object.entries(answerSettings).reduce((correctAnswersData, [ rowId, { id: correctColId } ]) => {
 					return {
 						...correctAnswersData,
 						[rowId]: correctColId
 					}
-				}, {})
+				}, {}),
+				maxPoints: Object.fromEntries(Object.entries(answerSettings).map(([ rowId, { points } ]) => [ rowId, points ]))
 			} : {})
 		},
 		points: aggregatedPoints
@@ -97,24 +102,26 @@ function singleOptionsGridValidator(content, answer, answerSettings, withCorrect
 }
 
 function multipleOptionsGridValidator(content, answer, answerSettings, withCorrectAnswers = false) {
-	const aggregatedPoints = Object.entries(answerSettings).reduce((totalPoints, [ rowId, { id: correctColIds, points } ]) => {
+	const aggregatedPoints = Object.entries(answerSettings).reduce((calculatedPoints, [ rowId, { id: correctColIds, points } ]) => {
 		const isSelectedColCorrect = correctColIds.every(colId => answer[rowId].includes(colId))
+		calculatedPoints[rowId] = isSelectedColCorrect ? points : 0
 
-		return totalPoints + (isSelectedColCorrect ? points : 0)
-	}, 0)
+		return calculatedPoints
+	}, {})
 
 	return {
 		answerData: {
 			answer: answer,
 
-			isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColIds } ]) => correctColIds.every(colId => answer[rowId].includes(colId))),
 			...(withCorrectAnswers ? {
+				isCorrectAnswer: Object.entries(answerSettings).every(([ rowId, { id: correctColIds } ]) => correctColIds.every(colId => answer[rowId].includes(colId))),
 				correctAnswersData: Object.entries(answerSettings).reduce((correctAnswersData, [ rowId, { id: correctColIds } ]) => {
 					return {
 						...correctAnswersData,
 						[rowId]: correctColIds
 					}
-				}, {})
+				}, {}),
+				maxPoints: Object.fromEntries(Object.entries(answerSettings).map(([ rowId, { points } ]) => [ rowId, points ]))
 			} : {}),
 		},
 		points: aggregatedPoints
@@ -184,6 +191,16 @@ function getHasAnswerChecker (questionType) {
 	}
 }
 
+function aggregateMaxPoints(answerSettings) {
+	const maxPoints = typeof answerSettings.points === 'object' ? Object.values(answerSettings.points).reduce((sum, { points }) => {
+		sum += points
+
+		return sum
+	}, 0) : (answerSettings.points || 0)
+
+	return maxPoints
+}
+
 
 module.exports = function buildMakeFormQuestion ({ Id }) {
 	return function makeFormQuestion({
@@ -221,6 +238,7 @@ module.exports = function buildMakeFormQuestion ({ Id }) {
 			isRequired: () => isRequired,
 			getTimeLimit: () => timeLimit,
 			getTitle: () => sanitizedTitle,
+			getMaxPoints: () => aggregateMaxPoints(answerSettings),
 
 			setAnswer: (newAnswer) => currentQuestionAnswer = newAnswer,
 			validateAnswer: () => validator(content, currentQuestionAnswer, answerSettings),

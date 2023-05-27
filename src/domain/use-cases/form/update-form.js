@@ -51,17 +51,10 @@ module.exports = function makeUpdateForm ({
 				return reject(makeInternalError(formError.message))
 			}
 
-			const [formUpdateResult, updateError] = await safeAsyncCall(formRepository.updateById({
-				id: newForm.getId(),
+			newForm.update()
 
-				authorId: newForm.getAuthorId(),
-				createdOn: newForm.getCreatedOn(),
-				updatedOn: newForm.getUpdatedOn(),
-				title: newForm.getTitle(),
-				description: newForm.getDescription(),
-				questions: newForm.getPlainQuestions (),
-				submissions: newForm.getSubmissions(),
-				settings: newForm.getSettings(),
+			const [formUpdateResult, updateError] = await safeAsyncCall(formRepository.updateById({
+				...newForm.toObject()
 			}))
 
 			if (updateError) {

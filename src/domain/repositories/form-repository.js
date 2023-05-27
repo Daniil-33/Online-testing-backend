@@ -17,30 +17,30 @@ module.exports = function makeSubmissionRepository ({ formRepositoryImplementati
 
 	async function findByIds({ formIds, attrs={} }) {
 		const db = await formRepositoryImplementation()
-		const result = await db.find({ _id: { $in: formIds } }).project(attrs).toArray()
+		const result = await db.find({ _id: { $in: formIds } }).toArray()
 
 		return result
 	}
 
-	async function findByAuthorId({ authorId, attrs={} }) {
+	async function findByAuthorId({ authorId }) {
 		const db = await formRepositoryImplementation()
-		const result = await db.find({ authorId }).project(attrs).toArray()
+		const result = await db.find({ authorId }).toArray()
 
 		return result
 	}
 
-	async function insert({ ...submissionInfo }) {
+	async function insert({ ...formData }) {
 		const db = await formRepositoryImplementation()
-		const result = await db.insertOne({ ...submissionInfo })
+		const result = await db.insertOne({ ...formData })
 
 		return result.insertedId
 	}
 
-	async function updateById({ id, ...submissionInfo }) {
+	async function updateById({ _id, ...formData }) {
 		const db = await formRepositoryImplementation()
-		const result = await db.updateOne({ _id: id }, { $set: { ...submissionInfo } })
+		const result = await db.updateOne({ _id }, { $set: { ...formData } })
 
-		return result.modifiedCount > 0 ? { id, ...submissionInfo } : null
+		return result.modifiedCount > 0 ? { _id, ...formData } : null
 	}
 
 	async function deleteById({ id }) {

@@ -10,9 +10,13 @@ module.exports = function makeGetSubmissionsList({
 		makeInternalError,
 		makeForbiddenError,
 
-		getFormsUseCases
+		getFormsUseCases,
+		getUserUseCase,
 	}={}) {
-		return function getSubmissionsList({ formId, userId }) {
+		return function getSubmissionsList({
+			formId,
+			userId,
+		}) {
 			return new Promise(async (resolve, reject) => {
 				const {
 					getFormUseCase,
@@ -20,27 +24,43 @@ module.exports = function makeGetSubmissionsList({
 				} = getFormsUseCases()
 
 				if (formId) {
-
-					const [formData, formError] = safeAsyncCall(getFormUseCase({ formId, userId }))
+					const [formData, formError] = await safeAsyncCall(getFormUseCase({ formId, userId }))
 
 					if (formError) {
 						return reject(formError)
 					}
 
-					const form = makeForm(formData)
+					const form = makeForm(formData.form)
 
 					if (form.getAuthorId() !== userId) {
 						return reject(makeForbiddenError(`You are not allowed to access this form.`))
 					}
 
-					const [submissions, submissionsError] = safeAsyncCall(submissionRepository.findByFormId({ formId }))
+					const [submissions, submissionsError] = await safeAsyncCall(submissionRepository.findByFormId({ formId }))
 
 					if (submissionsError) {
 						return reject(makeInternalError(`Error while fetching submissions.`))
 					}
 
+					const usersIds = uniqArrayItems(submissions.map(submission => makeFormSubmission(submission).getSubmitterId()))
+					const [submittersData, submittersError] = await safeAsyncCall(getUserUseCase({ usersIds }))
+
+					if (submittersError) {
+						return reject(submittersError)
+					}
+
+					const formattedSubmissions = submissions.map(submissionData => {
+						const submission = makeFormSubmission(submissionData)
+
+						return {
+							...submission.toMetaDataObject(),
+							maxFormPoints: form.getMaxPoints(),
+							submitterData: submittersData.find(user => user._id === submission.getSubmitterId()),
+						}
+					})
+
 					return resolve(Object.freeze({
-						submissions
+						submissions: formattedSubmissions,
 					}))
 				} else {
 					const [submissions, submissionsError] = await safeAsyncCall(submissionRepository.findBySubmitterId({ submitterId: userId }))
@@ -58,13 +78,14 @@ module.exports = function makeGetSubmissionsList({
 
 					const { forms: formsMetaData } = formsData
 					const formsMetaDataById = Object.fromEntries(formsMetaData.map(form => [form._id, form]))
-					const extendedSubmissions = submissions.map(submission => {
-						const formId = makeFormSubmission(submission).getFormId()
-						const formMetaData = formsMetaDataById[formId]
+					const extendedSubmissions = submissions.map(submissionData => {
+						const submission = makeFormSubmission(submissionData)
+						const formId = submission.getFormId()
+						const formData = formsMetaDataById[formId] || null
 
 						return {
-							...submission,
-							formMetaData,
+							...submission.toMetaDataObject(),
+							formData,
 						}
 					})
 

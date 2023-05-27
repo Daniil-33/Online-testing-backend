@@ -8,35 +8,47 @@ module.exports = function makeGetUser ({
 		makeUserNotFoundError,
 		makeInternalError,
 	} = {}) {
-		return function getUser ({ userId, token }) {
+		return function getUser ({ userId, token, usersIds }) {
 			return new Promise(async (resolve, reject) => {
-				let ID = null
+				if (usersIds) {
+					const [users, usersError] = await safeAsyncCall(userRepository.findByIds({ ids: usersIds }))
 
-				if (!token) {
-					ID = userId
-				} else {
-					const [decryptedToken, tokenError] = await safeAsyncCall(verifyJWT(token))
-
-					if (tokenError) {
-						return reject(makeInternalError(`Error while parsing token.`))
+					if (usersError) {
+						return reject(makeInternalError(`Error while fetching users.`))
 					}
 
-					const { id: userId } = decryptedToken
+					const formattedUsers = users.map((user) => makeUser(user).toMetaDataObject())
 
-					ID = userId
+					return resolve(formattedUsers)
+				} else {
+					let ID = null
+
+					if (!token) {
+						ID = userId
+					} else {
+						const [decryptedToken, tokenError] = await safeAsyncCall(verifyJWT(token))
+
+						if (tokenError) {
+							return reject(makeInternalError(`Error while parsing token.`))
+						}
+
+						const { id: userId } = decryptedToken
+
+						ID = userId
+					}
+
+					const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: ID }))
+
+					if (candidateError) {
+						return reject(makeInternalError(`Error while fetching user.`))
+					} else if (!candidate) {
+						return reject(makeUserNotFoundError(`User does not exist.`))
+					}
+
+					const user = makeUser(candidate)
+
+					return resolve(user.toObject())
 				}
-
-				const [candidate, candidateError] = await safeAsyncCall(userRepository.findById({ id: ID }))
-
-				if (candidateError) {
-					return reject(makeInternalError(`Error while fetching user.`))
-				} else if (!candidate) {
-					return reject(makeUserNotFoundError(`User does not exist.`))
-				}
-
-				const user = makeUser(candidate)
-
-				return resolve(user.toObject())
 			})
 		}
 };

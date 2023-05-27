@@ -9,7 +9,10 @@ const {
 	userRepository
 } = require('../../repositories');
 
-const { getUser: getUserUseCase } = require('../user/');
+const {
+	getUser: getUserUseCase,
+	updateUser: updateUserUseCase,
+} = require('../user/');
 
 const {
 	makeInternalError,
@@ -27,18 +30,22 @@ const {
 const makeGetSubmissionList = require('./get-submissions-list');
 const makeAddSubmission = require('./add-submission');
 const makeDeleteSubmission = require('./delete-submission');
+const makeUpdateSubmissionPoints = require('./update-submission-points');
 const makeGetSubmission = require('./get-submission');
+const makeGetSubmissionsAnalytic = require('./get-submissions-analytic');
 
 // This function needs to resolve circular dependencies
 const getFormsUseCases = () => {
 	const {
 		getForm: getFormUseCase,
 		getFormsList: getFormsListUseCase,
+		updateForm: updateFormUseCase,
 	} = require('../form/');
 
 	return {
 		getFormUseCase,
 		getFormsListUseCase,
+		updateFormUseCase,
 	}
 }
 
@@ -56,7 +63,8 @@ const getSubmissionsList = makeGetSubmissionList({
 	makeFormNotFoundError,
 	makeForbiddenError,
 
-	getFormsUseCases
+	getFormsUseCases,
+	getUserUseCase,
 });
 
 const addSubmission = makeAddSubmission({
@@ -74,6 +82,7 @@ const addSubmission = makeAddSubmission({
 	makeFormSubmissionValidationError,
 
 	getUserUseCase,
+	getFormsUseCases,
 })
 
 const getSubmission = makeGetSubmission({
@@ -89,23 +98,61 @@ const getSubmission = makeGetSubmission({
 	getFormsUseCases,
 })
 
-// const deleteSubmission = makeDeleteSubmission({
-// 	submissionRepository,
+const updateSubmissionPoints = makeUpdateSubmissionPoints({
+	submissionRepository,
 
-// 	safeAsyncCall,
+	safeAsyncCall,
 
-// 	makeForm: makeFormSubmission,
-// 	makeSubmission: makeFormSubmission,
+	makeForm,
+	makeFormSubmission,
 
-// 	makeInternalError,
-// 	makeForbiddenError,
+	makeInternalError,
+	makeForbiddenError,
 
-// 	getSubmissionUseCase,
-// 	getFormUseCase,
-// })
+	getSubmissionUseCase: getSubmission,
+
+	getFormsUseCases,
+})
+
+const deleteSubmission = makeDeleteSubmission({
+	submissionRepository,
+
+	safeAsyncCall,
+
+	makeForm,
+	makeFormSubmission,
+	makeUser,
+
+	makeInternalError,
+	makeForbiddenError,
+
+	getSubmissionUseCase: getSubmission,
+	getUserUseCase,
+	updateUserUseCase,
+	getFormsUseCases,
+})
+
+const getSubmissionsAnalytic = makeGetSubmissionsAnalytic({
+	submissionRepository,
+
+	safeAsyncCall,
+	uniqArrayItems,
+
+	makeForm,
+	makeFormSubmission,
+
+	makeInternalError,
+	makeForbiddenError,
+
+	getFormsUseCases,
+	getUserUseCase,
+})
 
 module.exports = {
 	getSubmissionsList,
 	addSubmission,
 	getSubmission,
+	deleteSubmission,
+	updateSubmissionPoints,
+	getSubmissionsAnalytic,
 }

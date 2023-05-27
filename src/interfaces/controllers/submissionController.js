@@ -13,7 +13,6 @@ module.exports = function makeSubmissionController({
 	deleteSubmissionUseCase,
 
 	authorizeControllerHelper,
-	getUserUseCase,
 }) {
 
 	/*
@@ -31,16 +30,6 @@ module.exports = function makeSubmissionController({
 		getSubmission,
 		updateSubmissionPoints,
 		deleteSubmission,
-	}
-
-	function _createNotAuthorizedError(error) {
-		return makeHttpError({
-			errorData: {
-				...error.toPlainObject(),
-				message: `Not authorized. ${error.getMessage()}`
-			},
-			code: 401,
-		})
 	}
 
 	async function getSubmissionsList (httpRequest) {
@@ -66,35 +55,8 @@ module.exports = function makeSubmissionController({
 	}
 
 	async function getSubmission (httpRequest) {
-		try {
-			const { authorization: token } = httpRequest.headers;
-			const { id: submissionId } = httpRequest.pathParams;
-	
-			const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
-
-			if (authorizationHttpError) {
-				return authorizationHttpError
-			}
-
-			const [submission, submissionError] = await safeAsyncCall(getSubmissionUseCase({ submissionId, userId: userData._id }))
-	
-			if (submissionError) {
-				return makeHttpError({
-					errorData: submissionError.toPlainObject(),
-					code: translateInterfaceErrorCodeToHttpStatusCode(submissionError.getCode()),
-				});
-			}
-	
-			return makeHttpResponse(submission)
-		} catch (error) {
-			console.log(error, error)
-		}
-	}
-
-	async function updateSubmissionPoints (httpRequest) {
 		const { authorization: token } = httpRequest.headers;
 		const { id: submissionId } = httpRequest.pathParams;
-		const { ...pointsData } = httpRequest.body;
 
 		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
 
@@ -102,7 +64,30 @@ module.exports = function makeSubmissionController({
 			return authorizationHttpError
 		}
 
-		const [submission, submissionError] = await safeAsyncCall(updateSubmissionPointsUseCase({ submissionId, userId: userData._id, ...pointsData }))
+		const [submission, submissionError] = await safeAsyncCall(getSubmissionUseCase({ submissionId, userId: userData._id }))
+
+		if (submissionError) {
+			return makeHttpError({
+				errorData: submissionError.toPlainObject(),
+				code: translateInterfaceErrorCodeToHttpStatusCode(submissionError.getCode()),
+			});
+		}
+
+		return makeHttpResponse(submission)
+	}
+
+	async function updateSubmissionPoints (httpRequest) {
+		const { authorization: token } = httpRequest.headers;
+		const { id: submissionId } = httpRequest.pathParams;
+		const { pointsData } = httpRequest.body;
+
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
+
+		if (authorizationHttpError) {
+			return authorizationHttpError
+		}
+
+		const [submission, submissionError] = await safeAsyncCall(updateSubmissionPointsUseCase({ submissionId, userId: userData._id, pointsData }))
 
 		if (submissionError) {
 			return makeHttpError({

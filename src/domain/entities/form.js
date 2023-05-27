@@ -5,28 +5,34 @@ const FORM_VIEW_TYPES = {
 
 function mapQuestions(questions) {
 	return questions.map(question => ({
-		id: question.getId(),
-		title: question.getTitle(),
-		type: question.getType(),
-		answerSettings: question.getAnswerSettings(),
-		content: question.getContent(),
-		isRequired: question.isRequired(),
+		...question.toObject(),
 	}))
 }
 
-function mapQuestionsForSubmission(questions) {
-	return questions.map(question => ({
-		id: question.getId(),
-		title: question.getTitle(),
-		type: question.getType(),
-		content: question.getContent(),
-		isRequired: question.isRequired(),
+function mapQuestionsForSubmission(questions, shuffleArrayFunction, shuffle) {
+	let mappedQuestions = questions.map(question => ({
+		...question.toSecureObject(),
 	}))
+
+	if (shuffleArrayFunction && shuffle) {
+		mappedQuestions = shuffleArrayFunction(mappedQuestions)
+	}
+
+	return mappedQuestions
+}
+
+function aggregateMaxPoints(formQuestions) {
+	return formQuestions.reduce((acc, curr) => {
+		acc += parseInt(curr.getMaxPoints())
+
+		return acc
+	}, 0)
 }
 
 module.exports = function buildMakeForm ({
 		Id,
-		makeFormQuestion
+		makeFormQuestion,
+		shuffleArray,
 	}={}) {
 		return function makeForm({
 			_id = Id.makeId(),
@@ -49,6 +55,7 @@ module.exports = function buildMakeForm ({
 				isAnonymous = false,
 				allQuestionsRequired = false,
 				submitOnce = true,
+				showResultsAfter = 'submission' // 'submission' or 'check'
 			} = {},
 		} = {}) {
 
@@ -78,6 +85,7 @@ module.exports = function buildMakeForm ({
 			const formSubmissions = [...submissions]
 
 			return Object.freeze({
+				// Getters
 				getId: () => _id,
 				getAuthorId: () => authorId,
 				getCreatedOn: () => createdOn,
@@ -88,13 +96,15 @@ module.exports = function buildMakeForm ({
 				getTitle: () => sanitizedTitle,
 				getDescription: () => sanitizedDescription,
 
+				// Settings
+				getSettings: () => settings,
 				getGeneralTimeLimit: () => settings.generalTimeLimit,
 				getQuestionDefaultTimeLimit: () => settings.questionDefaultTimeLimit,
 				getMixQuestions: () => settings.mixQuestions,
 				getConfirmText: () => settings.confirmText,
 				getFormView: () => settings.formView,
-
-				getSettings: () => settings,
+				getShowResultsAfter: () => settings.showResultsAfter,
+				getMaxPoints: () => aggregateMaxPoints(formQuestions),
 
 				isTest: () => settings.isTest,
 				isAcceptingSubmissions: () => !settings.doNotAcceptSubmissions,
@@ -102,25 +112,32 @@ module.exports = function buildMakeForm ({
 				isAllQuestionsRequired: () => settings.allQuestionsRequired,
 				isSubmitOnce: () => settings.submitOnce,
 
-				pushSubmission: (submissionId) => formSubmissions.push(submissionId),
+				// General mutations methods
+				update: () => updatedOn = Date.now(),
+				addSubmission: (submissionId) => formSubmissions.push(submissionId),
+				removeSubmission: (submissionId) => formSubmissions.splice(formSubmissions.indexOf(submissionId), 1),
 
+				// Formatting methods
 				toObject: () => ({
 					_id,
 					authorId,
-					title: sanitizedTitle,
-					description: sanitizedDescription,
-					questions: mapQuestions(formQuestions),
 					createdOn,
 					updatedOn,
+					settings,
+					title: sanitizedTitle,
+					description: sanitizedDescription,
 					submissions: formSubmissions,
-					settings
+					questions: mapQuestions(formQuestions),
 				}),
+
 				toMetaDataObject: () => ({
 					_id,
 					authorId,
 					title: sanitizedTitle,
 					description: sanitizedDescription,
 					createdOn,
+					submissionsCount: formSubmissions.length,
+					maxPoints: aggregateMaxPoints(formQuestions),
 
 					settings: {
 						isAllQuestionsRequired: settings.allQuestionsRequired,
@@ -128,14 +145,16 @@ module.exports = function buildMakeForm ({
 						formView: settings.formView,
 						questionDefaultTimeLimit: settings.questionDefaultTimeLimit,
 						generalTimeLimit: settings.generalTimeLimit,
+						showResultsAfter: settings.showResultsAfter,
 					}
 				}),
+
 				toSubmissionFormat: () => ({
 					_id,
 					authorId,
 					title: sanitizedTitle,
 					description: sanitizedDescription,
-					questions: mapQuestionsForSubmission(formQuestions),
+					questions: mapQuestionsForSubmission(formQuestions, shuffleArray, settings.mixQuestions),
 
 					settings: {
 						isAllQuestionsRequired: settings.allQuestionsRequired,

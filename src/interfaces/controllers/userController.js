@@ -5,9 +5,9 @@ module.exports = function makeUserController({
 	safeAsyncCall,
 	translateInterfaceErrorCodeToHttpStatusCode,
 
-	registerUserUseCase,
-	loginUserWithCredentialsUseCase,
-	loginUserWithTokenUseCase,
+	userRegisterUseCase,
+	userLoginWithCredentialsUseCase,
+	userLoginWithTokenUseCase,
 }) {
 	return {
 		registerUser,
@@ -26,7 +26,7 @@ module.exports = function makeUserController({
 			});
 		}
 
-		const [userData, userRegisterError] = await safeAsyncCall(registerUserUseCase({ userInfo }))
+		const [userData, userRegisterError] = await safeAsyncCall(userRegisterUseCase({ userInfo }))
 
 		if (userRegisterError) {
 			return makeHttpError({
@@ -54,7 +54,7 @@ module.exports = function makeUserController({
 		let userData, userLoginError;
 
 		if (token) {
-			[userData, userLoginError] = await safeAsyncCall(loginUserWithTokenUseCase({ token }))
+			[userData, userLoginError] = await safeAsyncCall(userLoginWithTokenUseCase({ token }))
 
 			if (!userLoginError) {
 				return makeHttpResponse(userData)
@@ -67,7 +67,7 @@ module.exports = function makeUserController({
 		}
 
 		if (credentials) {
-			[userData, userLoginError] = await safeAsyncCall(loginUserWithCredentialsUseCase({ credentials }))
+			[userData, userLoginError] = await safeAsyncCall(userLoginWithCredentialsUseCase({ credentials }))
 
 			if (!userLoginError) {
 				return makeHttpResponse(userData)

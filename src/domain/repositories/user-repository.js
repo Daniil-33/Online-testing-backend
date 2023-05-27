@@ -2,6 +2,7 @@ module.exports = function makeUserRepository ({ userRepositoryImplementation }) 
 	return Object.freeze({
 		insert,
 		findById,
+		findByIds,
 		findByEmail,
 		updateById,
 		deleteById,
@@ -17,6 +18,13 @@ module.exports = function makeUserRepository ({ userRepositoryImplementation }) 
 	async function findById({ id }) {
 		const db = await userRepositoryImplementation()
 		const result = await db.findOne({ _id: id })
+
+		return result
+	}
+
+	async function findByIds({ ids }) {
+		const db = await userRepositoryImplementation()
+		const result = await db.find({ _id: { $in: ids } }).toArray()
 
 		return result
 	}

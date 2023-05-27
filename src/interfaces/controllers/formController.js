@@ -11,9 +11,13 @@ module.exports = function makeFormController({
 	getFormUseCase,
 	getFormsListUseCase,
 	updateFormUseCase,
+	postFormUseCase,
+	deleteFormUseCase,
 	getFormForSubmissionUseCase,
 
-	postFormUseCase,
+	getSubmissionsListUseCase,
+	deleteSubmissionUseCase,
+	getSubmissionsAnalyticUseCase,
 }) {
 
 	/*
@@ -26,9 +30,8 @@ module.exports = function makeFormController({
 		DELETE - /form/:id (delete form)
 
 		GET - /form/:id/submissions (get submissions list for form)
-		GET - /form/:id/submissions/:submissionId (get submission for form)
-		PUT - /form/:id/submissions/:submissionId (update submission for form)
-		DELETE - /form/:id/submissions/:submissionId (delete submission for form)
+		DELETE - /form/:id/submissions/:id (delete submission)
+		GET - /form/:id/submissions/analytic (get submissions analytic for form)
 	*/
 
 	return {
@@ -39,6 +42,9 @@ module.exports = function makeFormController({
 		getFormsList,
 		editForm,
 		deleteForm,
+		getFormSubmissionsList,
+		deleteSubmission,
+		getSubmissionsAnalytic,
 	}
 
 	async function createForm(httpRequest) {
@@ -178,7 +184,27 @@ module.exports = function makeFormController({
 		return makeHttpResponse(formsList)
 	}
 
-	async function deleteForm(httpRequest) {}
+	async function deleteForm(httpRequest) {
+		const { authorization: token } = httpRequest.headers;
+		const { id: formId } = httpRequest.pathParams;
+
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
+
+		if (authorizationHttpError) {
+			return authorizationHttpError
+		}
+
+		const [deleteResult, deleteError] = await safeAsyncCall(deleteFormUseCase({ formId, userId: userData._id }))
+
+		if (deleteError) {
+			return makeHttpError({
+				errorData: deleteError.toPlainObject(),
+				code: translateInterfaceErrorCodeToHttpStatusCode(deleteError.getCode()),
+			});
+		}
+
+		return makeHttpResponse(deleteResult)
+	}
 
 	async function submitForm(httpRequest) {
 		const { authorization: token } = httpRequest.headers;
@@ -207,5 +233,71 @@ module.exports = function makeFormController({
 		}
 
 		return makeHttpResponse(submitResult)
+	}
+
+	async function getFormSubmissionsList(httpRequest) {
+		const { authorization: token } = httpRequest.headers;
+		const { id: formId } = httpRequest.pathParams;
+
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
+
+		if (authorizationHttpError) {
+			return authorizationHttpError
+		}
+
+		const [submissions, submissionsError] = await safeAsyncCall(getSubmissionsListUseCase({ formId, userId: userData._id }))
+
+		if (submissionsError) {
+			return makeHttpError({
+				errorData: submissionsError.toPlainObject(),
+				code: translateInterfaceErrorCodeToHttpStatusCode(submissionsError.getCode()),
+			});
+		}
+
+		return makeHttpResponse(submissions)
+	}
+
+	async function deleteSubmission(httpRequest) {
+		const { authorization: token } = httpRequest.headers;
+		const { submissionId } = httpRequest.pathParams;
+
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
+
+		if (authorizationHttpError) {
+			return authorizationHttpError
+		}
+
+		const [deleteResult, deleteError] = await safeAsyncCall(deleteSubmissionUseCase({ submissionId, userId: userData._id }))
+
+		if (deleteError) {
+			return makeHttpError({
+				errorData: deleteError.toPlainObject(),
+				code: translateInterfaceErrorCodeToHttpStatusCode(deleteError.getCode()),
+			});
+		}
+
+		return makeHttpResponse(deleteResult)
+	}
+
+	async function getSubmissionsAnalytic(httpRequest) {
+		const { authorization: token } = httpRequest.headers;
+		const { id: formId } = httpRequest.pathParams;
+
+		const [userData, authorizationHttpError] = await safeAsyncCall(authorizeControllerHelper(token))
+
+		if (authorizationHttpError) {
+			return authorizationHttpError
+		}
+
+		const [analytic, analyticError] = await safeAsyncCall(getSubmissionsAnalyticUseCase({ formId, userId: userData._id }))
+
+		if (analyticError) {
+			return makeHttpError({
+				errorData: analyticError.toPlainObject(),
+				code: translateInterfaceErrorCodeToHttpStatusCode(analyticError.getCode()),
+			});
+		}
+
+		return makeHttpResponse(analytic)
 	}
 }

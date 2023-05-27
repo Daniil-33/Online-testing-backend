@@ -1,10 +1,7 @@
 function checkAnswersAndCalculatePoints(form, answers) {
 	if (!form.isTest()) return
 
-	const {
-		checkedAnswersData,
-		calculatedPoints
-	} = form
+	const calculatedPoints = form
 		.getQuestions()
 		.reduce((calculatedPoints, question) => {
 			const questionId = question.getId()
@@ -36,12 +33,26 @@ function checkIsAllRequiredQuestionsAnswered(form, answers) {
 	return emptyAnswers
 }
 
+function aggregatePoints(pointsData) {
+	return Object.values(pointsData || {}).reduce((sum, points) => {
+		if (typeof points !== 'object') {
+			sum += parseInt(points)
+		} else {
+			sum += Object.values(points).reduce((s, v) => s + parseInt(v), 0)
+		}
+
+		return sum
+	}, 0)
+}
+
 module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 	return function makeSubmission({
 		_id = Id.makeId(),
 		submitterId,
 		answers,
 		createdOn = Date.now(),
+		updatedOn = Date.now(),
+		checkedOn = null,
 
 		form,
 		formId,
@@ -83,6 +94,8 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 			})
 
 			isChecked = true
+			updatedOn = Date.now()
+			checkedOn = Date.now()
 		}
 
 		return Object.freeze({
@@ -92,8 +105,10 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 			getAnswers: () => answers,
 			getAnswer: questionId => answers[questionId],
 			getCreatedOn: () => createdOn,
+			getUpdatedOn: () => updatedOn,
 			getPoints: () => initialPoints,
 			getEmptyAnswers: () => emptyAnswers,
+			getAggregatedPoints: () => aggregatePoints(initialPoints),
 
 			isChecked: () => isChecked,
 
@@ -106,14 +121,22 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 				formId,
 				answers,
 				createdOn,
+				updatedOn,
+				checkedOn,
+				isChecked,
 				points: initialPoints,
 			}),
+
 			toMetaDataObject: () => ({
 				_id,
 				submitterId,
 				formId,
 				createdOn,
+				updatedOn,
+				checkedOn,
+				isChecked,
 				points: initialPoints,
+				aggregatedPoints: aggregatePoints(initialPoints),
 			})
 		})
 	}

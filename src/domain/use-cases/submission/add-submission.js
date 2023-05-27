@@ -13,10 +13,13 @@ module.exports = function buildMakeAddSubmission ({
 		makeFormSubmissionValidationError,
 
 		getUserUseCase,
+		getFormsUseCases,
 	} = {}) {
 		// This use case awaiting for already created user and form entities objects as it calls only from another use case (post-form.js)
 		// in future there should be added check ups by userId and formId (for example, in case of import data)
 		return async function addSubmission({ answers, userId, form }) {
+			const { updateFormUseCase } = getFormsUseCases()
+
 			return new Promise(async (resolve, reject) => {
 				const [userData, userError] = await safeAsyncCall(getUserUseCase({ userId }))
 
@@ -58,7 +61,7 @@ module.exports = function buildMakeAddSubmission ({
 					return reject(makeInternalError(`Error while inserting submission.`))
 				}
 
-				user.pushSubmission(submission.getId())
+				user.addSubmission(submission.getId())
 
 				const [updateResult, updateError] = await safeAsyncCall(userRepository.updateById({
 					id: user.getId(),
@@ -69,11 +72,16 @@ module.exports = function buildMakeAddSubmission ({
 					return reject(makeInternalError(`Error while updating user.`))
 				}
 
-				form.pushSubmission(submission.getId())
+				form.addSubmission(submission.getId())
 
-				const [updateFormResult, updateFormError] = await safeAsyncCall(formRepository.updateById({
-					id: form.getId(),
-					submissions: form.getSubmissions()
+				// const [updateFormResult, updateFormError] = await safeAsyncCall(formRepository.updateById({
+				// 	id: form.getId(),
+				// 	submissions: form.getSubmissions()
+				// }))
+				const [updateFormResult, updateFormError] = await safeAsyncCall(updateFormUseCase({
+					formId: form.getId(),
+					formData: form.toObject(),
+					userId
 				}))
 
 				if (updateFormError) {

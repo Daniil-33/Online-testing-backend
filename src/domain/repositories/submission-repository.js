@@ -18,7 +18,7 @@ module.exports = function makeSubmissionRepository ({ submissionRepositoryImplem
 
 	async function findByFormId({ formId }) {
 		const db = await submissionRepositoryImplementation()
-		const result = await db.find({ formId })
+		const result = await db.find({ formId }).toArray()
 
 		return result
 	}

@@ -45,23 +45,14 @@ module.exports = function makeAddForm ({
 				}
 
 				const [insertedId, insertionError] = await safeAsyncCall(formRepository.insert({
-					_id: form.getId(),
-					authorId: form.getAuthorId(),
-					createdOn: form.getCreatedOn(),
-					updatedOn: form.getUpdatedOn(),
-					title: form.getTitle(),
-					description: form.getDescription(),
-					questions: form.getPlainQuestions(),
-					submissions: form.getSubmissions(),
-
-					settings: form.getSettings(),
+					...form.toObject()
 				}))
 
 				if (insertionError) {
 					return reject(makeInternalError(`Error while inserting form.`))
 				}
 
-				user.pushCreatedForm(form.getId())
+				user.addCreatedForm(form.getId())
 
 				const [updateResult, updateError] = await safeAsyncCall(updateUserUseCase({ userData: user.toObject() }))
 

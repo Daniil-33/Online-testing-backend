@@ -7,32 +7,27 @@ module.exports = function makeGetFormsList ({
 	}={}) {
 		return function getFormsList ({ userId, formIds }) {
 			return new Promise(async (resolve, reject) => {
+				let forms = []
+				let formsError = null
+
+
 				if (userId) {
-					const [forms, formsError] = await safeAsyncCall(formRepository.findByAuthorId({
+					[forms, formsError] = await safeAsyncCall(formRepository.findByAuthorId({
 						authorId: userId,
-						attrs: { createdOn: 1, title: 1, description: 1 }
-					}))
-
-					if (formsError) {
-						return reject(makeInternalError(`Error while fetching forms.`))
-					}
-
-					return resolve(Object.freeze({
-						forms
 					}))
 				} else if (formIds && formIds.length) {
-					const [forms, formsError] = await safeAsyncCall(formRepository.findByIds({
+					[forms, formsError] = await safeAsyncCall(formRepository.findByIds({
 						formIds,
 					}))
-
-					if (formsError) {
-						return reject(makeInternalError(`Error while fetching forms.`))
-					}
-
-					return resolve(Object.freeze({
-						forms: forms.map(form => makeForm(form).toMetaDataObject())
-					}))
 				}
+
+				if (formsError) {
+					return reject(makeInternalError(`Error while fetching forms.`))
+				}
+
+				return resolve(Object.freeze({
+					forms: forms.map(form => makeForm(form).toMetaDataObject())
+				}))
 			})
 		}
 }

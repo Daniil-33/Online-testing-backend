@@ -155,6 +155,7 @@ const deleteForm = makeDeleteForm({
 	makeInternalError,
 
 	getUserUseCase,
+	updateUserUseCase,
 	getFormUseCase: getForm,
 })
 
