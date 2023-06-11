@@ -25,13 +25,13 @@ module.exports = function makeUserLoginWithCredentials ({
 				const candidate = await userRepository.findByEmail({ email })
 
 				if (!candidate) {
-					reject(makeUserNotFoundError(`User with this email does not exist`))
+					return reject(makeUserNotFoundError(`User with this email does not exist`))
 				}
 
 				const [user, userError] = safeSyncCall(() => makeUser(candidate))
 
 				if (userError) {
-					reject(makeInternalError(userError.message))
+					return reject(makeInternalError(userError.message))
 				}
 
 				const isPasswordValid = await comparePasswords(password, user.getPassword())

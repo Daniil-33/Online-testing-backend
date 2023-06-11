@@ -35,7 +35,7 @@ module.exports = function buildMakeGetSubmission ({
 
 			const form = makeForm(formData.form)
 
-			if (submission.getSubmitterId() !== userId || form.getAuthorId() !== userId) {
+			if (submission.getSubmitterId() !== userId && form.getAuthorId() !== userId) {
 				return reject(makeForbiddenError(`You are not allowed to access this submission.`))
 			}
 
@@ -45,11 +45,11 @@ module.exports = function buildMakeGetSubmission ({
 				}))
 			}
 
-			const isRequestedByFormAuthor = submission.getSubmitterId() === form.getAuthorId()
+			const isRequestedByFormAuthor = userId === form.getAuthorId()
 			const formattedSubmissionQuestionsAnswers = form
 				.getQuestions()
 				.map((question) => {
-					if (form.isTest() && (isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true))) {
+					if (isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true)) {
 						return question.renderQuestionWithAnswer(submission.getAnswer(question.getId()), true)
 					}
 
@@ -58,7 +58,7 @@ module.exports = function buildMakeGetSubmission ({
 
 			return resolve(Object.freeze({
 				submission: {
-					...(form.isTest() && (isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true) ? { aggregatedPoints: submission.getAggregatedPoints() } : {})),
+					...(isRequestedByFormAuthor || (form.getShowResultsAfter() === 'check' ? submission.isChecked() : true) ? { aggregatedPoints: submission.getAggregatedPoints() } : {}),
 					...submission.toMetaDataObject(),
 					formData: form.toMetaDataObject(),
 					questions: formattedSubmissionQuestionsAnswers

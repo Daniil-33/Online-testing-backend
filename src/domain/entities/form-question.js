@@ -25,10 +25,11 @@ function shortTextValidator(content, answer, answerSettings, withCorrectAnswers 
 	}
 }
 
-function detailedTextValidator(content, answer) {
+function detailedTextValidator(content, answer, answerSettings, withCorrectAnswers = false) {
 	return {
 		answerData: {
-			answer: answer
+			answer: answer,
+			maxPoints: answerSettings.points
 		},
 		points: 0
 	}
@@ -192,11 +193,11 @@ function getHasAnswerChecker (questionType) {
 }
 
 function aggregateMaxPoints(answerSettings) {
-	const maxPoints = typeof answerSettings.points === 'object' ? Object.values(answerSettings.points).reduce((sum, { points }) => {
-		sum += points
+	const maxPoints = !answerSettings.points && typeof answerSettings === 'object' ? Object.values(answerSettings).reduce((sum, { points }) => {
+		sum += parseFloat(points)
 
 		return sum
-	}, 0) : (answerSettings.points || 0)
+	}, 0) : (parseFloat(answerSettings.points) || 0)
 
 	return maxPoints
 }

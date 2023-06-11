@@ -76,10 +76,10 @@ module.exports = function buildMakeFormSubmission ({ Id, makeForm }) {
 		}
 
 		const emptyAnswers = form && checkIsAllRequiredQuestionsAnswered(form, answers) || []
-		let initialPoints = points
+		let initialPoints = points || {}
 
 		function checkUpSubmission() {
-			if (form && form.isTest() && !Object.keys(points || {}).length) {
+			if (form && !Object.keys(points || {}).length) {
 				const calculatedPoints = checkAnswersAndCalculatePoints(form, answers)
 
 				initialPoints = calculatedPoints
